@@ -152,6 +152,9 @@ MODULE shared_data
   LOGICAL :: predictor_step
   LOGICAL :: resistive_mhd, any_open, rke, hall_mhd
   LOGICAL :: restart, heat_flux_limiter, force_exact_time_outputs
+  
+  !Flag for two-fluid
+  LOGICAL :: two_fluid
 
   ! Normalising constants
   REAL(num) :: B_norm, L_norm, rho_norm, time_norm
@@ -163,6 +166,8 @@ MODULE shared_data
   REAL(num) :: lr_star
   ! Normalisation used for coronal heating
   REAL(num) :: h_star
+  ! Normalisation for the collisional coupling coefficient
+  REAL(num) :: alpha_0
 
   ! Heat conduction
   LOGICAL :: conduction, radiation, coronal_heating
