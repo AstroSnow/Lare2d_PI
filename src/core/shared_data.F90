@@ -105,6 +105,13 @@ MODULE shared_data
   REAL(num), DIMENSION(:,:), ALLOCATABLE :: bz, vz, vz1
   REAL(num), DIMENSION(:,:), ALLOCATABLE :: bx1, by1, bz1
   REAL(num), DIMENSION(:,:), ALLOCATABLE :: jx_r, jy_r, jz_r
+  
+  !Two-fluid extra variables
+  REAL(num), DIMENSION(:,:), ALLOCATABLE :: xi_i, pressure_plasma
+  REAL(num), DIMENSION(:,:), ALLOCATABLE :: vD_x, vD_x1
+  REAL(num), DIMENSION(:,:), ALLOCATABLE :: vD_y, vD_y1
+  REAL(num), DIMENSION(:,:), ALLOCATABLE :: vD_z, vD_z1
+  REAL(num), DIMENSION(:,:), ALLOCATABLE :: alpha_c
 
   REAL(num), DIMENSION(:,:), ALLOCATABLE :: delta_ke, p_visc
   REAL(num), DIMENSION(:,:), ALLOCATABLE :: cool_term_b, cool_term_v
