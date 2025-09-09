@@ -253,7 +253,7 @@ MODULE shared_data
   TYPE(probe), POINTER :: probe_head, probe_tail
 
   ! Number of variables to dump
-  LOGICAL, DIMENSION(20) :: dump_mask
+  LOGICAL, DIMENSION(25) :: dump_mask
 
   INTEGER, PARAMETER :: stat_unit = 20
   INTEGER, PARAMETER :: en_unit = 30
