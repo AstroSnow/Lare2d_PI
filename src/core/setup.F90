@@ -77,6 +77,15 @@ CONTAINS
     vx = 0.0_num
     vy = 0.0_num
     vz = 0.0_num
+    
+    IF (two_fluid) THEN
+        xi_i=0.0_num
+        pressure_plasma=0.0_num
+        vD_x=0.0_num
+        vD_y=0.0_num
+        vD_z=0.0_num
+        alpha_c=0.0_num
+    ENDIF
 
     va_max2 = va_max**2
 
