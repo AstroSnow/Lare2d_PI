@@ -272,6 +272,19 @@ CONTAINS
     IF (rke) ALLOCATE(delta_ke(-1:nx+2, -1:ny+2))
     IF (hall_mhd) ALLOCATE(lambda_i(0:nx, 0:ny))
     ALLOCATE(gamma_boris(-1:nx+2, -1:ny+2))
+    
+    !Allocate arrays for two-fluid
+    IF (two_fluid) then
+        ALLOCATE(xi_i(-1:nx+2, -1:ny+2))
+        ALLOCATE(pressure_plasma(-1:nx+2, -1:ny+2))
+        ALLOCATE(vD_x(-1:nx+2, -1:ny+2))
+        ALLOCATE(vD_x1(-1:nx+2, -1:ny+2))
+        ALLOCATE(vD_y(-1:nx+2, -1:ny+2))
+        ALLOCATE(vD_y1(-1:nx+2, -1:ny+2))
+        ALLOCATE(vD_z(-1:nx+2, -1:ny+2))
+        ALLOCATE(vD_z1(-1:nx+2, -1:ny+2))
+        ALLOCATE(alpha_c(-1:nx+2, -1:ny+2))
+    ENDIF
 
     IF (cooling_term) THEN
       ALLOCATE(cool_term_v(nx,ny))
