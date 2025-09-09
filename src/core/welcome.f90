@@ -131,7 +131,7 @@ CONTAINS
     DO i = strmin, MIN(strmax,strlen)
       IF (c_commit_id(i:i) == '-') THEN
         str = c_commit_id(strmin:i-1)
-        READ(str, '(i9)') c_minor_rev
+        !READ(str, '(i9)') c_minor_rev
         strmax = i - 1
         EXIT
       END IF
