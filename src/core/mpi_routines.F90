@@ -277,6 +277,7 @@ CONTAINS
     IF (two_fluid_flag) then
         ALLOCATE(rho_n(-1:nx+2, -1:ny+2))
         ALLOCATE(pressure_n(-1:nx+2, -1:ny+2))
+        ALLOCATE(energy_n(-1:nx+2, -1:ny+2))
         ALLOCATE(vn_x(-2:nx+2, -2:ny+2))
         ALLOCATE(vn_x1(-2:nx+2, -2:ny+2))
         ALLOCATE(vn_y(-2:nx+2, -2:ny+2))
