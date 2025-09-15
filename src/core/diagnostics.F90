@@ -601,7 +601,7 @@ CONTAINS
 
       CALL sdf_write_plain_variable(sdf_handle, TRIM(varname), &
           'PIP/' // TRIM(varname), TRIM(units), dims, &
-          c_stagger_cell_centre, 'grid', eta_perp, &
+          c_stagger_cell_centre, 'grid', rho_n, &
           cell_distribution, cell_subarray, convert)
     END IF
     
@@ -612,7 +612,7 @@ CONTAINS
 
       CALL sdf_write_plain_variable(sdf_handle, TRIM(varname), &
           'PIP/' // TRIM(varname), TRIM(units), dims, &
-          c_stagger_cell_centre, 'grid', eta_perp, &
+          c_stagger_cell_centre, 'grid', vn_x, &
           cell_distribution, cell_subarray, convert)
     END IF
     
@@ -623,7 +623,7 @@ CONTAINS
 
       CALL sdf_write_plain_variable(sdf_handle, TRIM(varname), &
           'PIP/' // TRIM(varname), TRIM(units), dims, &
-          c_stagger_cell_centre, 'grid', eta_perp, &
+          c_stagger_cell_centre, 'grid', vn_y, &
           cell_distribution, cell_subarray, convert)
     END IF
     
@@ -634,7 +634,7 @@ CONTAINS
 
       CALL sdf_write_plain_variable(sdf_handle, TRIM(varname), &
           'PIP/' // TRIM(varname), TRIM(units), dims, &
-          c_stagger_cell_centre, 'grid', eta_perp, &
+          c_stagger_cell_centre, 'grid', vn_z, &
           cell_distribution, cell_subarray, convert)
     END IF
     
@@ -645,7 +645,7 @@ CONTAINS
 
       CALL sdf_write_plain_variable(sdf_handle, TRIM(varname), &
           'PIP/' // TRIM(varname), TRIM(units), dims, &
-          c_stagger_cell_centre, 'grid', eta_perp, &
+          c_stagger_cell_centre, 'grid', pressure_n, &
           cell_distribution, cell_subarray, convert)
     END IF
     
