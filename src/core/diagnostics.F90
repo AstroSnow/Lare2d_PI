@@ -313,8 +313,9 @@ CONTAINS
 
     CALL sdf_write_namevalue(sdf_handle, 'logical_flags', 'Logical flags', &
         (/'use_edge        ', 'x_stretch       ', 'y_stretch       ', &
-          'resistive_mhd   ', 'hall_mhd        ', 'rke             '/), &
-        (/.TRUE., x_stretch, y_stretch, resistive_mhd, hall_mhd, rke/))
+          'resistive_mhd   ', 'hall_mhd        ', 'rke             ', &
+          'two_fluid_flag  '/), &
+        (/.TRUE., x_stretch, y_stretch, resistive_mhd, hall_mhd, rke, two_fluid_flag/))
 
     CALL sdf_write_namevalue(sdf_handle, 'integer_flags', 'Integer flags', &
         (/'nx_global   ', 'ny_global   ', 'nsteps      ', 'xbc_min     ', &
@@ -591,6 +592,64 @@ CONTAINS
       ohmic_dep = 0.0_num
       visc_dep = 0.0_num
     END IF
+    
+    !Two-fluid dumps
+    IF (dump_mask(21)) THEN
+      varname = 'rho_n'
+      units = ''
+      dims = global_dims
+
+      CALL sdf_write_plain_variable(sdf_handle, TRIM(varname), &
+          'PIP/' // TRIM(varname), TRIM(units), dims, &
+          c_stagger_cell_centre, 'grid', eta_perp, &
+          cell_distribution, cell_subarray, convert)
+    END IF
+    
+    IF (dump_mask(22)) THEN
+      varname = 'vn_x'
+      units = ''
+      dims = global_dims
+
+      CALL sdf_write_plain_variable(sdf_handle, TRIM(varname), &
+          'PIP/' // TRIM(varname), TRIM(units), dims, &
+          c_stagger_cell_centre, 'grid', eta_perp, &
+          cell_distribution, cell_subarray, convert)
+    END IF
+    
+    IF (dump_mask(23)) THEN
+      varname = 'vn_y'
+      units = ''
+      dims = global_dims
+
+      CALL sdf_write_plain_variable(sdf_handle, TRIM(varname), &
+          'PIP/' // TRIM(varname), TRIM(units), dims, &
+          c_stagger_cell_centre, 'grid', eta_perp, &
+          cell_distribution, cell_subarray, convert)
+    END IF
+    
+    IF (dump_mask(24)) THEN
+      varname = 'vn_z'
+      units = ''
+      dims = global_dims
+
+      CALL sdf_write_plain_variable(sdf_handle, TRIM(varname), &
+          'PIP/' // TRIM(varname), TRIM(units), dims, &
+          c_stagger_cell_centre, 'grid', eta_perp, &
+          cell_distribution, cell_subarray, convert)
+    END IF
+    
+    IF (dump_mask(25)) THEN
+      varname = 'pressure_n'
+      units = ''
+      dims = global_dims
+
+      CALL sdf_write_plain_variable(sdf_handle, TRIM(varname), &
+          'PIP/' // TRIM(varname), TRIM(units), dims, &
+          c_stagger_cell_centre, 'grid', eta_perp, &
+          cell_distribution, cell_subarray, convert)
+    END IF
+    
+    
 
     IF (ALLOCATED(array)) DEALLOCATE(array)
 
