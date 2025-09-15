@@ -122,8 +122,8 @@ CONTAINS
     eta0 = 0.0_num
     
     !Turn on or off the two-fluid system
-    two_fluid=.TRUE.
-    if(two_fluid) alpha_0=1.d0 !Timescale for collisions
+    two_fluid_flag=.TRUE.
+    if(two_fluid_flag) alpha_0=1.d0 !Timescale for collisions
 
     ! Turn on or off the hall_mhd term in the MHD equations
     ! If true than lambda_i must be set in the initial conditions
@@ -270,7 +270,7 @@ CONTAINS
     IF (cowling_resistivity) dump_mask(15) = .TRUE.
     IF (resistive_mhd) dump_mask(16) = .TRUE.
 
-    IF (two_fluid) dump_mask(21:25)=.TRUE.
+    IF (two_fluid_flag) dump_mask(21:25)=.TRUE.
 
   END SUBROUTINE set_output_dumps
 

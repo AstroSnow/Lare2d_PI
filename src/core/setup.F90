@@ -78,7 +78,7 @@ CONTAINS
     vy = 0.0_num
     vz = 0.0_num
     
-    IF (two_fluid) THEN
+    IF (two_fluid_flag) THEN
         rho_n=0.0_num
         pressure_n=0.0_num
         vn_x=0.0_num

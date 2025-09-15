@@ -64,6 +64,8 @@ CONTAINS
     WRITE(*,*) 'Welcome to ', TRIM(c_code_name), ' version ', &
         TRIM(version_string) // '   (commit ' // TRIM(c_commit_id) // ')'
     WRITE(*,*)
+    
+    IF (two_fluid_flag) WRITE(*,*) 'Experimental two-fluid version'
 
     CALL mpi_status_message
 

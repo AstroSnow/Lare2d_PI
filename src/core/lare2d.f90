@@ -30,6 +30,7 @@ PROGRAM lare2d
   USE normalise
   USE neutral
   USE control
+  USE two_fluid
 
   IMPLICIT NONE
 
@@ -46,7 +47,13 @@ PROGRAM lare2d
 
   CALL welcome_message     ! welcome.f90
 
-  CALL setup_neutral       ! neutral.f90
+  !Set up the two-fluid routines
+  IF (two_fluid_flag) then 
+    CALL setup_two_fluid !two_fluid.f90
+  ELSE
+    CALL setup_neutral       ! neutral.f90
+  ENDIF
+  
   CALL normalise_transport ! normalise.f90
 
   CALL grid                      ! setup.f90

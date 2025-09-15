@@ -178,7 +178,7 @@ PREPROFLAGS = $(DEFINES) $(D)_COMMIT='"$(COMMIT)"' $(D)_DATE=$(DATE) \
 
 SRCFILES = boundary.f90 conduct.f90 radiative.f90 control.f90 diagnostics.F90 \
   initial_conditions.f90 lagran.F90 lare2d.f90 mpi_routines.F90 \
-  mpiboundary.f90 neutral.f90 normalise.f90 openboundary.f90 \
+  mpiboundary.f90 two_fluid.f90 neutral.f90 normalise.f90 openboundary.f90 \
   random_generator.f90 remap.f90 setup.F90 shared_data.F90 version_data.F90 \
   welcome.f90 xremap.f90 yremap.f90 zremap.f90
 
@@ -264,13 +264,14 @@ diagnostics.o: diagnostics.F90 boundary.o conduct.o shared_data.o \
   version_data.o $(SDFMOD)
 initial_conditions.o: initial_conditions.f90 neutral.o diagnostics.o shared_data.o \
   boundary.o
-lagran.o: lagran.F90 boundary.o conduct.o radiative.o neutral.o shared_data.o \
+lagran.o: lagran.F90 boundary.o conduct.o radiative.o two_fluid.o neutral.o shared_data.o \
   openboundary.o remap.o
 lare2d.o: lare2d.f90 boundary.o control.o diagnostics.o initial_conditions.o \
   lagran.o mpi_routines.o neutral.o normalise.o remap.o setup.o \
   shared_data.o welcome.o
 mpi_routines.o: mpi_routines.F90 shared_data.o
 mpiboundary.o: mpiboundary.f90 shared_data.o
+two_fluid.o: two_fluid.f90 shared_data.o
 neutral.o: neutral.f90 boundary.o shared_data.o
 normalise.o: normalise.f90 shared_data.o
 openboundary.o: openboundary.f90 shared_data.o

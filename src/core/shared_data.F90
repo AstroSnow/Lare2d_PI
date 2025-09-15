@@ -154,7 +154,7 @@ MODULE shared_data
   LOGICAL :: restart, heat_flux_limiter, force_exact_time_outputs
   
   !Flag for two-fluid
-  LOGICAL :: two_fluid
+  LOGICAL :: two_fluid_flag
 
   ! Normalising constants
   REAL(num) :: B_norm, L_norm, rho_norm, time_norm
