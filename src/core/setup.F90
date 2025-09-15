@@ -79,11 +79,11 @@ CONTAINS
     vz = 0.0_num
     
     IF (two_fluid) THEN
-        xi_i=0.0_num
-        pressure_plasma=0.0_num
-        vD_x=0.0_num
-        vD_y=0.0_num
-        vD_z=0.0_num
+        rho_n=0.0_num
+        pressure_n=0.0_num
+        vn_x=0.0_num
+        vn_y=0.0_num
+        vn_z=0.0_num
         alpha_c=0.0_num
     ENDIF
 

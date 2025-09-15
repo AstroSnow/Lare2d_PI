@@ -122,7 +122,7 @@ CONTAINS
     eta0 = 0.0_num
     
     !Turn on or off the two-fluid system
-    two_fluid=.FALSE.
+    two_fluid=.TRUE.
     if(two_fluid) alpha_0=1.d0 !Timescale for collisions
 
     ! Turn on or off the hall_mhd term in the MHD equations
@@ -255,11 +255,11 @@ CONTAINS
     ! 20 - accumulated viscous and resistive heating
     
     !Two-fluid options
-    ! 21 - xi_i
-    ! 22 - vd_x
-    ! 23 - vd_y
-    ! 24 - vd_z
-    ! 25 - pressure_p
+    ! 21 - rho_n
+    ! 22 - vn_x
+    ! 23 - vn_y
+    ! 24 - vn_z
+    ! 25 - pressure_n
     
     ! If a given element of dump_mask is true then that field is dumped
     ! If the element is false then the field isn't dumped

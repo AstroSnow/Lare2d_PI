@@ -275,14 +275,14 @@ CONTAINS
     
     !Allocate arrays for two-fluid
     IF (two_fluid) then
-        ALLOCATE(xi_i(-1:nx+2, -1:ny+2))
-        ALLOCATE(pressure_plasma(-1:nx+2, -1:ny+2))
-        ALLOCATE(vD_x(-1:nx+2, -1:ny+2))
-        ALLOCATE(vD_x1(-1:nx+2, -1:ny+2))
-        ALLOCATE(vD_y(-1:nx+2, -1:ny+2))
-        ALLOCATE(vD_y1(-1:nx+2, -1:ny+2))
-        ALLOCATE(vD_z(-1:nx+2, -1:ny+2))
-        ALLOCATE(vD_z1(-1:nx+2, -1:ny+2))
+        ALLOCATE(rho_n(-1:nx+2, -1:ny+2))
+        ALLOCATE(pressure_n(-1:nx+2, -1:ny+2))
+        ALLOCATE(vn_x(-1:nx+2, -1:ny+2))
+        ALLOCATE(vn_x1(-1:nx+2, -1:ny+2))
+        ALLOCATE(vn_y(-1:nx+2, -1:ny+2))
+        ALLOCATE(vn_y1(-1:nx+2, -1:ny+2))
+        ALLOCATE(vn_z(-1:nx+2, -1:ny+2))
+        ALLOCATE(vn_z1(-1:nx+2, -1:ny+2))
         ALLOCATE(alpha_c(-1:nx+2, -1:ny+2))
     ENDIF
 
