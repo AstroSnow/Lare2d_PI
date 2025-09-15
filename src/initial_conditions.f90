@@ -64,9 +64,9 @@ CONTAINS
     rho(-1:nx+2, -1:ny+2) = 0.1_num
     energy(-1:nx+2, -1:ny+2) = 0.1_num
     
-    vx_n(-2:nx+2, -2:ny+2) = 0.0_num
-    vy_n(-2:nx+2, -2:ny+2) = 0.0_num
-    vz_n(-2:nx+2, -2:ny+2) = 0.0_num
+    vn_x(-2:nx+2, -2:ny+2) = 0.0_num
+    vn_y(-2:nx+2, -2:ny+2) = 0.0_num
+    vn_z(-2:nx+2, -2:ny+2) = 0.0_num
 
     rho_n(-1:nx+2, -1:ny+2) = 0.9_num
     energy_n(-1:nx+2, -1:ny+2) = 0.1_num
@@ -81,22 +81,22 @@ CONTAINS
 
     ! If neutrals included xi_n is a function of temperature so iteration required
     ! Set the neutral fraction if needed
-    DO ix = -1,nx+2,1
-       DO iy = -1,ny+2,1
-         IF (eos_number /= EOS_IDEAL) THEN         
-           xi_v = get_neutral(temperature(ix,iy), rho(ix,iy))
-         ELSE  
-           IF (neutral_gas) THEN
-             xi_v = 1.0_num
-           ELSE
-             xi_v = 0.0_num
-           END IF
-         END IF
-         energy(ix,iy) = (temperature(ix,iy) * (2.0_num - xi_v) &
-            + (1.0_num - xi_v) * ionise_pot * (gamma - 1.0_num)) &
-            / (gamma - 1.0_num)
-       END DO
-    END DO
+    !DO ix = -1,nx+2,1
+    !   DO iy = -1,ny+2,1
+    !     IF (eos_number /= EOS_IDEAL) THEN         
+    !       xi_v = get_neutral(temperature(ix,iy), rho(ix,iy))
+    !     ELSE  
+    !       IF (neutral_gas) THEN
+    !         xi_v = 1.0_num
+    !       ELSE
+    !         xi_v = 0.0_num
+    !       END IF
+    !     END IF
+    !     energy(ix,iy) = (temperature(ix,iy) * (2.0_num - xi_v) &
+    !        + (1.0_num - xi_v) * ionise_pot * (gamma - 1.0_num)) &
+    !        / (gamma - 1.0_num)
+    !   END DO
+    !END DO
     !DO ix= -1,nx+2
     !    energy(ix,ny+2) = energy(ix,ny+1)
     !END DO
