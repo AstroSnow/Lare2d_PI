@@ -608,34 +608,34 @@ CONTAINS
     IF (dump_mask(22)) THEN
       varname = 'vn_x'
       units = ''
-      dims = global_dims
+      dims = global_dims + 1
 
       CALL sdf_write_plain_variable(sdf_handle, TRIM(varname), &
           'PIP/' // TRIM(varname), TRIM(units), dims, &
           c_stagger_cell_centre, 'grid', vn_x, &
-          cell_distribution, cell_subarray, convert)
+          node_distribution, node_subarray, convert)
     END IF
     
     IF (dump_mask(23)) THEN
       varname = 'vn_y'
       units = ''
-      dims = global_dims
+      dims = global_dims + 1
 
       CALL sdf_write_plain_variable(sdf_handle, TRIM(varname), &
           'PIP/' // TRIM(varname), TRIM(units), dims, &
           c_stagger_cell_centre, 'grid', vn_y, &
-          cell_distribution, cell_subarray, convert)
+          node_distribution, node_subarray, convert)
     END IF
     
     IF (dump_mask(24)) THEN
       varname = 'vn_z'
       units = ''
-      dims = global_dims
+      dims = global_dims + 1
 
       CALL sdf_write_plain_variable(sdf_handle, TRIM(varname), &
           'PIP/' // TRIM(varname), TRIM(units), dims, &
-          c_stagger_cell_centre, 'grid', vn_z, &
-          cell_distribution, cell_subarray, convert)
+          c_stagger_vertex, 'grid', vn_z, &
+          node_distribution, node_subarray, convert)
     END IF
     
     IF (dump_mask(25)) THEN
