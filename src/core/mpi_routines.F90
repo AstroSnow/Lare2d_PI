@@ -277,12 +277,12 @@ CONTAINS
     IF (two_fluid_flag) then
         ALLOCATE(rho_n(-1:nx+2, -1:ny+2))
         ALLOCATE(pressure_n(-1:nx+2, -1:ny+2))
-        ALLOCATE(vn_x(-1:nx+2, -1:ny+2))
-        ALLOCATE(vn_x1(-1:nx+2, -1:ny+2))
-        ALLOCATE(vn_y(-1:nx+2, -1:ny+2))
-        ALLOCATE(vn_y1(-1:nx+2, -1:ny+2))
-        ALLOCATE(vn_z(-1:nx+2, -1:ny+2))
-        ALLOCATE(vn_z1(-1:nx+2, -1:ny+2))
+        ALLOCATE(vn_x(-2:nx+2, -2:ny+2))
+        ALLOCATE(vn_x1(-2:nx+2, -2:ny+2))
+        ALLOCATE(vn_y(-2:nx+2, -2:ny+2))
+        ALLOCATE(vn_y1(-2:nx+2, -2:ny+2))
+        ALLOCATE(vn_z(-2:nx+2, -2:ny+2))
+        ALLOCATE(vn_z1(-2:nx+2, -2:ny+2))
         ALLOCATE(alpha_c(-1:nx+2, -1:ny+2))
     ENDIF
 
