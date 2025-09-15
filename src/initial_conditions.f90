@@ -61,10 +61,19 @@ CONTAINS
     by(-1:nx+2, -2:ny+2) = 0.0_num
     bz(-1:nx+2, -1:ny+2) = 0.0_num
 
-    rho(-1:nx+2, -1:ny+2) = 1.0_num
+    rho(-1:nx+2, -1:ny+2) = 0.1_num
     energy(-1:nx+2, -1:ny+2) = 0.1_num
+    
+    vx_n(-2:nx+2, -2:ny+2) = 0.0_num
+    vy_n(-2:nx+2, -2:ny+2) = 0.0_num
+    vz_n(-2:nx+2, -2:ny+2) = 0.0_num
+
+    rho_n(-1:nx+2, -1:ny+2) = 0.9_num
+    energy_n(-1:nx+2, -1:ny+2) = 0.1_num
 
     grav(-1:ny+2) = 0.0_num
+
+
 
     ! If defining the initial conditions using temperature then use
     ALLOCATE(temperature(-1:nx+2, -1:ny+2))
@@ -88,34 +97,34 @@ CONTAINS
             / (gamma - 1.0_num)
        END DO
     END DO
-    DO ix= -1,nx+2
-        energy(ix,ny+2) = energy(ix,ny+1)
-    END DO
+    !DO ix= -1,nx+2
+    !    energy(ix,ny+2) = energy(ix,ny+1)
+    !END DO
 
-    IF (hall_mhd) THEN
-      lambda_i(0:nx, 0:ny) = 1.0_num
-    END IF
+    !IF (hall_mhd) THEN
+    !  lambda_i(0:nx, 0:ny) = 1.0_num
+    !END IF
 
     ! If probe points needed add them here
-    CALL add_probe(0.0_num, 0.0_num)
+    !CALL add_probe(0.0_num, 0.0_num)
 
     ! An example of fixing the initial field to a potential field based on specifying the lower boundary
     ! Must have ybc_min = BC_USER for this to work
-    IF (IAND(initial, IC_NEW) /= 0) CALL potential_field
+    !IF (IAND(initial, IC_NEW) /= 0) CALL potential_field
 
     ! example use of visc3  - add viscous damping at top
-    IF (use_viscous_damping) THEN
-      width = length_x / 10.0_num
-      centre = 0.4_num * length_x + width
-      amp = 1.0_num   !adjust this value as required
-      DO iy = -1, ny + 1
-       DO ix = -1, nx + 1
-          visc3(ix,iy) = visc3(ix,iy) + amp * (1.0_num + TANH((ABS(xb(ix)) - centre) / width)) 
-        END DO
-      END DO
-    END IF
+    !IF (use_viscous_damping) THEN
+    !  width = length_x / 10.0_num
+    !  centre = 0.4_num * length_x + width
+    !  amp = 1.0_num   !adjust this value as required
+    !  DO iy = -1, ny + 1
+    !   DO ix = -1, nx + 1
+    !      visc3(ix,iy) = visc3(ix,iy) + amp * (1.0_num + TANH((ABS(xb(ix)) - centre) / width)) 
+    !    END DO
+    !  END DO
+    !END IF
 
-    DEALLOCATE(temperature)
+    !DEALLOCATE(temperature)
 
   END SUBROUTINE set_initial_conditions
 
