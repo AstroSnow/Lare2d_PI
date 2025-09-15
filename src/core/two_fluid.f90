@@ -20,6 +20,9 @@ CONTAINS
         !Reserved for any potential setup requirements
         write(*,*) 'setup for two fluid'
 
+        ALLOCATE(xi_n(-1:nx+2, -1:ny+2))
+        xi_n = 0.0_num
+        
     END SUBROUTINE setup_two_fluid
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
