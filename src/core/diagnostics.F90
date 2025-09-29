@@ -639,13 +639,13 @@ CONTAINS
     END IF
     
     IF (dump_mask(25)) THEN
-      varname = 'pressure_n'
+      varname = 'energy_n'
       units = ''
       dims = global_dims
 
       CALL sdf_write_plain_variable(sdf_handle, TRIM(varname), &
           'PIP/' // TRIM(varname), TRIM(units), dims, &
-          c_stagger_cell_centre, 'grid', pressure_n, &
+          c_stagger_cell_centre, 'grid', energy_n, &
           cell_distribution, cell_subarray, convert)
     END IF
     

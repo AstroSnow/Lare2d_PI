@@ -107,7 +107,7 @@ MODULE shared_data
   REAL(num), DIMENSION(:,:), ALLOCATABLE :: jx_r, jy_r, jz_r
   
   !Two-fluid extra variables
-  REAL(num), DIMENSION(:,:), ALLOCATABLE :: rho_n, pressure_n, energy_n
+  REAL(num), DIMENSION(:,:), ALLOCATABLE :: rho_n, energy_n
   REAL(num), DIMENSION(:,:), ALLOCATABLE :: vn_x, vn_x1
   REAL(num), DIMENSION(:,:), ALLOCATABLE :: vn_y, vn_y1
   REAL(num), DIMENSION(:,:), ALLOCATABLE :: vn_z, vn_z1

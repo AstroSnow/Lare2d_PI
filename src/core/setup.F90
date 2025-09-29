@@ -80,7 +80,7 @@ CONTAINS
     
     IF (two_fluid_flag) THEN
         rho_n=0.0_num
-        pressure_n=0.0_num
+        energy_n=0.0_num
         vn_x=0.0_num
         vn_y=0.0_num
         vn_z=0.0_num
