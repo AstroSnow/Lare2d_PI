@@ -19,7 +19,7 @@
 MODULE lagran
 
   USE shared_data, only : num,nx,ny,ix
-  USE boundary, only : energy_bcs
+  !USE boundary, only : energy_bcs
   !USE neutral
   !USE conduct
   !USE radiative
@@ -111,62 +111,13 @@ CONTAINS
       END DO
     END DO
 
-    IF (coronal_heating) CALL user_defined_heating
-
     IF (use_viscous_damping) CALL viscous_damping
     CALL edge_shock_viscosity
     CALL set_dt
     dt2 = dt * 0.5_num
 
-    IF (resistive_mhd .OR. hall_mhd) THEN
-      ! If subcycling isn't wanted set dt = dtr in set_dt, don't just
-      ! set substeps to 1.
-      IF (resistive_mhd) THEN
-        dt_sub = dtr
-        IF (hall_mhd) dt_sub = MIN(dtr, dth)
-      ELSE
-        dt_sub = dth
-      END IF
-
-      substeps = INT(dt / dt_sub) + 1
-
-      IF (substeps > peak_substeps) peak_substeps = substeps
-      actual_dt = dt
-      dt = dt / REAL(substeps, num)
-
-      DO subcycle = 1, substeps
-        IF (resistive_mhd) CALL eta_calc
-        IF (eos_number /= EOS_IDEAL) CALL neutral_fraction
-        IF (cowling_resistivity) CALL perpendicular_resistivity
-        IF (hall_mhd) CALL hall_effects
-        IF (resistive_mhd) CALL resistive_effects
-      END DO
-
-      DO iy = -1, ny + 2
-        iym = iy - 1
-        DO ix = -1, nx + 2
-          ixm = ix - 1
-          bx1(ix,iy) = (bx(ix,iy) + bx(ixm,iy )) * 0.5_num
-          by1(ix,iy) = (by(ix,iy) + by(ix ,iym)) * 0.5_num
-          bz1(ix,iy) = bz(ix,iy)
-        END DO
-      END DO
-
-      dt = actual_dt
-    END IF
-
     delta_energy(:,:) = 0.0_num
     energy0(:,:) = energy(:,:)
-    IF (conduction) THEN
-      CALL conduct_heat
-      delta_energy(:,:) = energy(:,:) - energy0(:,:)
-      energy(:,:) = energy0(:,:)
-    END IF
-    IF (radiation) THEN
-      CALL rad_losses
-      delta_energy(:,:) = delta_energy(:,:) + (energy(:,:) - energy0(:,:))
-      energy(:,:) = energy0(:,:)
-    END IF
     energy(:,:) = energy0(:,:) + delta_energy(:,:)
     energy(:,:) = MAX(energy(:,:), 0.0_num)
 
