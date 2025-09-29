@@ -44,6 +44,8 @@ MODULE lagran
   REAL(num), DIMENSION(:,:), ALLOCATABLE :: rho_temp, en_temp
   REAL(num), DIMENSION(:,:), ALLOCATABLE :: vx_temp,vy_temp,vz_temp
   REAL(num), DIMENSION(:,:), ALLOCATABLE :: bx_temp,by_temp,bz_temp
+  
+  REAL(num), DIMENSION(:,:), ALLOCATABLE :: bx1, by1, bz1
 
 CONTAINS
 
