@@ -40,6 +40,10 @@ MODULE lagran
   REAL(num), DIMENSION(:,:), ALLOCATABLE :: bx0, by0, bz0
   REAL(num), DIMENSION(:,:), ALLOCATABLE :: qx, qy, qz
   REAL(num), DIMENSION(:,:), ALLOCATABLE :: energy0, delta_energy
+  
+  REAL(num), DIMENSION(:,:), ALLOCATABLE :: rho_temp, en_temp
+  REAL(num), DIMENSION(:,:), ALLOCATABLE :: vx_temp,vy_temp,vz_temp
+  REAL(num), DIMENSION(:,:), ALLOCATABLE :: bx_temp,by_temp,bz_temp
 
 CONTAINS
 

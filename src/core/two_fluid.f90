@@ -13,12 +13,6 @@ MODULE two_fluid
   PRIVATE
   PUBLIC :: setup_two_fluid
 
-  REAL(num), DIMENSION(:,:), ALLOCATABLE :: visc_heat, rho_v, cv_v
-  REAL(num), DIMENSION(:,:), ALLOCATABLE :: alpha1, alpha2
-  REAL(num), DIMENSION(:,:), ALLOCATABLE :: pressure_n
-  REAL(num), DIMENSION(:,:), ALLOCATABLE :: qx,qy,qz
-  REAL(num), DIMENSION(:,:), ALLOCATABLE :: fx_visc,fy_visc,fz_visc
-  REAL(num), DIMENSION(:,:), ALLOCATABLE :: flux_x,flux_y,flux_z
 
 CONTAINS
 
