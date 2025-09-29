@@ -41,7 +41,7 @@ MODULE lagran
   REAL(num), DIMENSION(:,:), ALLOCATABLE :: qx, qy, qz
   REAL(num), DIMENSION(:,:), ALLOCATABLE :: energy0, delta_energy
   
-  REAL(num), DIMENSION(:,:), ALLOCATABLE :: rho_temp, en_temp
+  REAL(num), DIMENSION(:,:), ALLOCATABLE :: rho_temp, energy_temp
   REAL(num), DIMENSION(:,:), ALLOCATABLE :: vx_temp,vy_temp,vz_temp
   REAL(num), DIMENSION(:,:), ALLOCATABLE :: bx_temp,by_temp,bz_temp
 
@@ -83,16 +83,46 @@ CONTAINS
     ALLOCATE(energy0(-1:nx+2,-1:ny+2))
     ALLOCATE(delta_energy(-1:nx+2,-1:ny+2))
 
+    ALLOCATE(rho_temp(-1:nx+1,-1:ny+1))
+    ALLOCATE(energy_temp(-1:nx+2,-1:ny+2))
+    ALLOCATE(bx_temp(-1:nx+2,-1:ny+2))
+    ALLOCATE(by_temp(-1:nx+2,-1:ny+2))
+    ALLOCATE(bz_temp(-1:nx+2,-1:ny+2))
+    ALLOCATE(vx_temp(-1:nx+2,-1:ny+2))
+    ALLOCATE(vy_temp(-1:nx+2,-1:ny+2))
+    ALLOCATE(vz_temp(-1:nx+2,-1:ny+2))
+
+!Asign temperary variable for neutral or plasma step
+    if (flag_neutral_step) then
+        rho_temp=rho_n
+        energy_temp=energy_n
+        bx_temp=0.d0
+        by_temp=0.d0
+        bz_temp=0.d0
+        vx_temp=vn_x
+        vy_temp=vn_y
+        vz_temp=vn_z
+    else
+        rho_temp=rho
+        energy_temp=energy
+        bx_temp=bx
+        by_temp=by
+        bz_temp=bz
+        vx_temp=vx
+        vy_temp=vy
+        vz_temp=vz
+    endif
+
     DO iy = -1, ny + 2
       iym = iy - 1
       DO ix = -1, nx + 2
         ixm = ix - 1
-        bx1(ix,iy) = (bx(ix,iy) + bx(ixm,iy )) * 0.5_num
-        by1(ix,iy) = (by(ix,iy) + by(ix ,iym)) * 0.5_num
-        bz1(ix,iy) = bz(ix,iy)
+        bx1(ix,iy) = (bx_temp(ix,iy) + bx_temp(ixm,iy )) * 0.5_num
+        by1(ix,iy) = (by_temp(ix,iy) + by_temp(ix ,iym)) * 0.5_num
+        bz1(ix,iy) = bz_temp(ix,iy)
 
-        pressure(ix,iy) = (gamma - 1.0_num) * rho(ix,iy) &
-            * (energy(ix,iy) - (1.0_num - xi_n(ix,iy)) * ionise_pot)
+        pressure(ix,iy) = (gamma - 1.0_num) * rho_temp(ix,iy) &
+            * (energy_temp(ix,iy) - (1.0_num - xi_n(ix,iy)) * ionise_pot)
       END DO
     END DO
 
@@ -100,8 +130,8 @@ CONTAINS
       iyp = iy + 1
       DO ix = -1, nx + 1
         ixp = ix + 1
-        rho_v(ix,iy) = rho(ix,iy) * cv(ix,iy) + rho(ixp,iy) * cv(ixp,iy) &
-            +   rho(ix,iyp) * cv(ix,iyp) + rho(ixp,iyp) * cv(ixp,iyp)
+        rho_v(ix,iy) = rho_temp(ix,iy) * cv(ix,iy) + rho_temp(ixp,iy) * cv(ixp,iy) &
+            +   rho_temp(ix,iyp) * cv(ix,iyp) + rho_temp(ixp,iyp) * cv(ixp,iyp)
         cv_v(ix,iy) = cv(ix,iy) + cv(ixp,iy) + cv(ix,iyp) + cv(ixp,iyp)
         rho_v(ix,iy) = rho_v(ix,iy) / cv_v(ix,iy)
 
@@ -144,9 +174,9 @@ CONTAINS
         iym = iy - 1
         DO ix = -1, nx + 2
           ixm = ix - 1
-          bx1(ix,iy) = (bx(ix,iy) + bx(ixm,iy )) * 0.5_num
-          by1(ix,iy) = (by(ix,iy) + by(ix ,iym)) * 0.5_num
-          bz1(ix,iy) = bz(ix,iy)
+          bx1(ix,iy) = (bx_temp(ix,iy) + bx_temp(ixm,iy )) * 0.5_num
+          by1(ix,iy) = (by_temp(ix,iy) + by_temp(ix ,iym)) * 0.5_num
+          bz1(ix,iy) = bz_temp(ix,iy)
         END DO
       END DO
 
@@ -154,19 +184,19 @@ CONTAINS
     END IF
 
     delta_energy(:,:) = 0.0_num
-    energy0(:,:) = energy(:,:)
+    energy0(:,:) = energy_temp(:,:)
     IF (conduction) THEN
       CALL conduct_heat
-      delta_energy(:,:) = energy(:,:) - energy0(:,:)
-      energy(:,:) = energy0(:,:)
+      delta_energy(:,:) = energy_temp(:,:) - energy0(:,:)
+      energy_temp(:,:) = energy0(:,:)
     END IF
     IF (radiation) THEN
       CALL rad_losses
-      delta_energy(:,:) = delta_energy(:,:) + (energy(:,:) - energy0(:,:))
-      energy(:,:) = energy0(:,:)
+      delta_energy(:,:) = delta_energy(:,:) + (energy_temp(:,:) - energy0(:,:))
+      energy_temp(:,:) = energy0(:,:)
     END IF
-    energy(:,:) = energy0(:,:) + delta_energy(:,:)
-    energy(:,:) = MAX(energy(:,:), 0.0_num)
+    energy_temp(:,:) = energy0(:,:) + delta_energy(:,:)
+    energy_temp(:,:) = MAX(energy_temp(:,:), 0.0_num)
 
     CALL predictor_corrector_step
 
@@ -179,6 +209,18 @@ CONTAINS
     DEALLOCATE(bx0, by0, bz0)
 #endif
 
+!restore temperary variable for neutral or plasma step
+    if (flag_neutral_step) then
+        rho_n=rho_temp
+        energy_n=energy_temp
+    else
+        rho=rho_temp
+        energy=energy_temp
+    endif
+
+    DEALLOCATE(rho_temp,energy_temp)
+
+print*,'NEED TO SORT OUT THE BOUNDARY CALLS'
     CALL energy_bcs
     CALL density_bcs
     CALL velocity_bcs
@@ -204,9 +246,9 @@ CONTAINS
 #endif
 
 #ifndef CAUCHY
-    bx0(:,:) = bx(:,:) 
-    by0(:,:) = by(:,:) 
-    bz0(:,:) = bz(:,:) 
+    bx0(:,:) = bx_temp(:,:) 
+    by0(:,:) = by_temp(:,:) 
+    bz0(:,:) = bz_temp(:,:) 
 #endif
 
     CALL b_field_and_cv1_update
@@ -219,12 +261,12 @@ CONTAINS
       DO ix = 0, nx + 1
         dv = cv1(ix,iy) / cv(ix,iy) - 1.0_num
         ! Predictor energy
-        e1 = energy(ix,iy) - pressure(ix,iy) * dv / rho(ix,iy)
-        e1 = e1 + visc_heat(ix,iy) * dt2 / rho(ix,iy)
+        e1 = energy_temp(ix,iy) - pressure(ix,iy) * dv / rho_temp(ix,iy)
+        e1 = e1 + visc_heat(ix,iy) * dt2 / rho_temp(ix,iy)
 
         ! Now define the predictor step pressures
         pressure(ix,iy) = (e1 - (1.0_num - xi_n(ix,iy)) * ionise_pot) &
-            * (gamma - 1.0_num) * rho(ix,iy) * cv(ix,iy) / cv1(ix,iy)
+            * (gamma - 1.0_num) * rho_temp(ix,iy) * cv(ix,iy) / cv1(ix,iy)
       END DO
     END DO
 
@@ -285,13 +327,13 @@ CONTAINS
         bzv = (bz1(ix,iy ) + bz1(ixp,iy ) + bz1(ix,iyp) + bz1(ixp,iyp)) &
             / (cvx + cvxp)
 #else
-        bxv = 0.5_num * (bx(ix,iy) + bx(ix,iyp))   
-        byv = 0.5_num * (by(ix,iy) + by(ixp,iy))
-        bzv = 0.25_num * (bz(ix,iy ) + bz(ixp,iy ) + bz(ix,iyp) + bz(ixp,iyp)) 
+        bxv = 0.5_num * (bx_temp(ix,iy) + bx_temp(ix,iyp))   
+        byv = 0.5_num * (by_temp(ix,iy) + by_temp(ixp,iy))
+        bzv = 0.25_num * (bz_temp(ix,iy ) + bz_temp(ixp,iy ) + bz_temp(ix,iyp) + bz_temp(ixp,iyp)) 
         
-        jx = 0.5_num * (bz(ix,iyp) + bz(ixp,iyp) - bz(ix,iy) - bz(ixp,iy)) / dyc(iy)
-        jy = - 0.5_num * (bz(ixp,iy) + bz(ixp,iyp)- bz(ix,iy) - bz(ix,iyp)) / dxc(ix)
-        jz = (by(ixp,iy) - by(ix,iy)) / dxc(ix) - (bx(ix,iyp) - bx(ix,iy)) / dyc(iy)
+        jx = 0.5_num * (bz_temp(ix,iyp) + bz_temp(ixp,iyp) - bz_temp(ix,iy) - bz_temp(ixp,iy)) / dyc(iy)
+        jy = - 0.5_num * (bz_temp(ixp,iy) + bz_temp(ixp,iyp)- bz_temp(ix,iy) - bz_temp(ix,iyp)) / dxc(ix)
+        jz = (by_temp(ixp,iy) - by_temp(ix,iy)) / dxc(ix) - (bx_temp(ix,iyp) - bx_temp(ix,iy)) / dyc(iy)
 #endif
         fx = fx + gamma_boris(ix,iy) * (jy * bzv - jz * byv)
         fy = fy + gamma_boris(ix,iy) * (jz * bxv - jx * bzv)
@@ -300,16 +342,16 @@ CONTAINS
         fy = fy - rho_v(ix,iy) * grav(iy)
 
         ! Find half step velocity needed for remap
-        vx1(ix,iy) = vx(ix,iy) + dt2 * (fx_visc(ix,iy) + fx) / rho_v(ix,iy)
-        vy1(ix,iy) = vy(ix,iy) + dt2 * (fy_visc(ix,iy) + fy) / rho_v(ix,iy)
-        vz1(ix,iy) = vz(ix,iy) + dt2 * (fz_visc(ix,iy) + fz) / rho_v(ix,iy)
+        vx1(ix,iy) = vx_temp(ix,iy) + dt2 * (fx_visc(ix,iy) + fx) / rho_v(ix,iy)
+        vy1(ix,iy) = vy_temp(ix,iy) + dt2 * (fy_visc(ix,iy) + fy) / rho_v(ix,iy)
+        vz1(ix,iy) = vz_temp(ix,iy) + dt2 * (fz_visc(ix,iy) + fz) / rho_v(ix,iy)
       END DO
     END DO
 
 #ifndef CAUCHY
-    bx(:,:) = bx0(:,:) 
-    by(:,:) = by0(:,:) 
-    bz(:,:) = bz0(:,:) 
+    bx_temp(:,:) = bx0(:,:) 
+    by_temp(:,:) = by0(:,:) 
+    bz_temp(:,:) = bz0(:,:) 
 #endif
     
     CALL remap_v_bcs
@@ -319,9 +361,9 @@ CONTAINS
     DO iy = 0, ny
       DO ix = 0, nx
         ! Velocity at the end of the Lagrangian step
-        vx(ix,iy) = 2.0_num * vx1(ix,iy) - vx(ix,iy) 
-        vy(ix,iy) = 2.0_num * vy1(ix,iy) - vy(ix,iy) 
-        vz(ix,iy) = 2.0_num * vz1(ix,iy) - vz(ix,iy) 
+        vx_temp(ix,iy) = 2.0_num * vx1(ix,iy) - vx_temp(ix,iy) 
+        vy_temp(ix,iy) = 2.0_num * vy1(ix,iy) - vy_temp(ix,iy) 
+        vz_temp(ix,iy) = 2.0_num * vz1(ix,iy) - vz_temp(ix,iy) 
       END DO
     END DO
 
@@ -350,13 +392,13 @@ CONTAINS
         cv1(ix,iy) = cv(ix,iy) * (1.0_num + dv)
 
         ! Energy at end of Lagrangian step
-        energy(ix,iy) = energy(ix,iy) &
+        energy_temp(ix,iy) = energy_temp(ix,iy) &
             + (dt * visc_heat(ix,iy) - dv * pressure(ix,iy)) &
-            / rho(ix,iy)
+            / rho_temp(ix,iy)
 
         visc_dep(ix,iy) = visc_dep(ix,iy) + dt * visc_heat(ix,iy)
 
-        rho(ix,iy) = rho(ix,iy) / (1.0_num + dv)
+        rho_temp(ix,iy) = rho_temp(ix,iy) / (1.0_num + dv)
 
         total_visc_heating = total_visc_heating &
             + dt * visc_heat(ix,iy) * cv(ix,iy)
@@ -367,13 +409,13 @@ CONTAINS
     IF (cooling_term) THEN
       DO iy = 1, ny
         DO ix = 1, nx
-          cool_term_v(ix,iy) = alpha_av * dt * visc_heat(ix,iy)/rho(ix,iy) + &
+          cool_term_v(ix,iy) = alpha_av * dt * visc_heat(ix,iy)/rho_temp(ix,iy) + &
               (1.0_num - alpha_av) * cool_term_v(ix,iy)
 
-          energy(ix,iy) = energy(ix,iy) - cool_term_v(ix,iy)
+          energy_temp(ix,iy) = energy_temp(ix,iy) - cool_term_v(ix,iy)
         END DO
       END DO
-      energy = MAX(energy, 0.0_num)
+      energy_temp = MAX(energy_temp, 0.0_num)
     END IF
 
   END SUBROUTINE predictor_corrector_step
@@ -393,22 +435,22 @@ CONTAINS
         ixp = ix + 1
         ixm = ix - 1
         qx(ix,iy) = visc3(ix,iy)  &
-           * (((vx(ixp,iy) - vx(ix,iy))/ dxb(ixp) - (vx(ix,iy) - vx(ixm,iy))/ dxb(ix)) / dxc(ix) &
-           +  ((vx(ix,iyp) - vx(ix,iy))/ dyb(iyp) - (vx(ix,iy) - vx(ix,iym))/ dyb(iy)) / dyc(iy)) 
+           * (((vx_temp(ixp,iy) - vx_temp(ix,iy))/ dxb(ixp) - (vx_temp(ix,iy) - vx_temp(ixm,iy))/ dxb(ix)) / dxc(ix) &
+           +  ((vx_temp(ix,iyp) - vx_temp(ix,iy))/ dyb(iyp) - (vx_temp(ix,iy) - vx_temp(ix,iym))/ dyb(iy)) / dyc(iy)) 
         qy(ix,iy) = visc3(ix,iy)  &
-           * (((vy(ixp,iy) - vy(ix,iy))/ dxb(ixp) - (vy(ix,iy) - vy(ixm,iy))/ dxb(ix)) / dxc(ix) &
-           +  ((vy(ix,iyp) - vy(ix,iy))/ dyb(iyp) - (vy(ix,iy) - vy(ix,iym))/ dyb(iy)) / dyc(iy)) 
+           * (((vy_temp(ixp,iy) - vy_temp(ix,iy))/ dxb(ixp) - (vy_temp(ix,iy) - vy_temp(ixm,iy))/ dxb(ix)) / dxc(ix) &
+           +  ((vy_temp(ix,iyp) - vy_temp(ix,iy))/ dyb(iyp) - (vy_temp(ix,iy) - vy_temp(ix,iym))/ dyb(iy)) / dyc(iy)) 
         qz(ix,iy) = visc3(ix,iy)  &
-           * (((vz(ixp,iy) - vz(ix,iy))/ dxb(ixp) - (vz(ix,iy) - vz(ixm,iy))/ dxb(ix)) / dxc(ix) &
-           +  ((vz(ix,iyp) - vz(ix,iy))/ dyb(iyp) - (vz(ix,iy) - vz(ix,iym))/ dyb(iy)) / dyc(iy)) 
+           * (((vz_temp(ixp,iy) - vz_temp(ix,iy))/ dxb(ixp) - (vz_temp(ix,iy) - vz_temp(ixm,iy))/ dxb(ix)) / dxc(ix) &
+           +  ((vz_temp(ix,iyp) - vz_temp(ix,iy))/ dyb(iyp) - (vz_temp(ix,iy) - vz_temp(ix,iym))/ dyb(iy)) / dyc(iy)) 
       END DO
     END DO
 
     DO iy = 0, ny
       DO ix = 0, nx
-        vx(ix,iy) = vx(ix,iy) + dt * qx(ix,iy)
-        vy(ix,iy) = vy(ix,iy) + dt * qy(ix,iy)
-        vz(ix,iy) = vz(ix,iy) + dt * qz(ix,iy)
+        vx_temp(ix,iy) = vx_temp(ix,iy) + dt * qx(ix,iy)
+        vy_temp(ix,iy) = vy_temp(ix,iy) + dt * qy(ix,iy)
+        vz_temp(ix,iy) = vz_temp(ix,iy) + dt * qz(ix,iy)
       END DO
     END DO
 
@@ -441,7 +483,7 @@ CONTAINS
 
     DO iy = -1, ny + 2
       DO ix = -1, nx + 2
-        rmin = MAX(rho(ix,iy), none_zero)
+        rmin = MAX(rho_temp(ix,iy), none_zero)
         b2 = bx1(ix,iy)**2 + by1(ix,iy)**2 + bz1(ix,iy)**2
         cs(ix,iy) = SQRT((gamma * pressure(ix,iy) + gamma_boris(ix,iy) * b2) / rmin)
       END DO
@@ -480,7 +522,7 @@ CONTAINS
         dxp = dxb(ixp)
         dxm = dxb(ixm)
         ! dv in direction of dS, i.e. dv.dS / abs(dS)
-        dvdots = - (vx(i1,j1) - vx(i2,j2))
+        dvdots = - (vx_temp(i1,j1) - vx_temp(i2,j2))
         ! Force on node is alpha*dv*ds but store only alpha and convert to force
         ! when needed.  
         alpha1(ix,iy) = edge_viscosity()
@@ -506,7 +548,7 @@ CONTAINS
         dx = dyb(iy)
         dxp = dyb(iyp)
         dxm = dyb(iym)
-        dvdots = - (vy(i1,j1) - vy(i2,j2))
+        dvdots = - (vy_temp(i1,j1) - vy_temp(i2,j2))
         alpha2(ix,iy) = edge_viscosity()
       END DO
     END DO
@@ -518,14 +560,14 @@ CONTAINS
         ixm = ix - 1
         ixp = ix + 1
         ! Estimate p_visc based on alpha * dv, for timestep control
-        a1 = ((vx(ixm,iym) - vx(ix ,iym))**2  &
-              + (vy(ixm,iym) - vy(ix ,iym))**2 + (vz(ixm,iym) - vz(ix ,iym))**2) 
-        a2 = ((vx(ix ,iym) - vx(ix ,iy ))**2  &
-              + (vy(ix ,iym) - vy(ix ,iy ))**2 + (vz(ix ,iym) - vz(ix ,iy ))**2)
-        a3 = ((vx(ix ,iy ) - vx(ixm,iy ))**2  &
-              + (vy(ix ,iy ) - vy(ixm,iy ))**2 + (vz(ix ,iy ) - vz(ixm,iy ))**2) 
-        a4 = ((vx(ixm,iy ) - vx(ixm,iym))**2  &
-              + (vy(ixm,iy ) - vy(ixm,iym))**2 + (vz(ixm,iy ) - vz(ixm,iym))**2)
+        a1 = ((vx_temp(ixm,iym) - vx_temp(ix ,iym))**2  &
+              + (vy_temp(ixm,iym) - vy_temp(ix ,iym))**2 + (vz_temp(ixm,iym) - vz_temp(ix ,iym))**2) 
+        a2 = ((vx_temp(ix ,iym) - vx_temp(ix ,iy ))**2  &
+              + (vy_temp(ix ,iym) - vy_temp(ix ,iy ))**2 + (vz_temp(ix ,iym) - vz_temp(ix ,iy ))**2)
+        a3 = ((vx_temp(ix ,iy ) - vx_temp(ixm,iy ))**2  &
+              + (vy_temp(ix ,iy ) - vy_temp(ixm,iy ))**2 + (vz_temp(ix ,iy ) - vz_temp(ixm,iy ))**2) 
+        a4 = ((vx_temp(ixm,iy ) - vx_temp(ixm,iym))**2  &
+              + (vy_temp(ixm,iy ) - vy_temp(ixm,iym))**2 + (vz_temp(ixm,iy ) - vz_temp(ixm,iym))**2)
 
         p_visc(ix,iy) = MAX(p_visc(ix,iy), - alpha1(ix,iy)*SQRT(a1)) 
         p_visc(ix,iy) = MAX(p_visc(ix,iy), - alpha2(ix,iy)*SQRT(a2)) 
@@ -555,20 +597,20 @@ CONTAINS
         a3 = alpha2(ix ,iy ) * dxc(ix)
         a4 = alpha2(ix ,iyp) * dxc(ix)
 
-        fx_visc(ix,iy) = (a1 * (vx(ix,iy) - vx(ixm,iy )) &
-                        + a2 * (vx(ix,iy) - vx(ixp,iy )) &
-                        + a3 * (vx(ix,iy) - vx(ix ,iym)) &
-                        + a4 * (vx(ix,iy) - vx(ix ,iyp)) ) / cv_v(ix,iy)
+        fx_visc(ix,iy) = (a1 * (vx_temp(ix,iy) - vx_temp(ixm,iy )) &
+                        + a2 * (vx_temp(ix,iy) - vx_temp(ixp,iy )) &
+                        + a3 * (vx_temp(ix,iy) - vx_temp(ix ,iym)) &
+                        + a4 * (vx_temp(ix,iy) - vx_temp(ix ,iyp)) ) / cv_v(ix,iy)
 
-        fy_visc(ix,iy) = (a1 * (vy(ix,iy) - vy(ixm,iy )) &
-                        + a2 * (vy(ix,iy) - vy(ixp,iy )) &
-                        + a3 * (vy(ix,iy) - vy(ix ,iym)) &
-                        + a4 * (vy(ix,iy) - vy(ix ,iyp)) ) / cv_v(ix,iy)
+        fy_visc(ix,iy) = (a1 * (vy_temp(ix,iy) - vy_temp(ixm,iy )) &
+                        + a2 * (vy_temp(ix,iy) - vy_temp(ixp,iy )) &
+                        + a3 * (vy_temp(ix,iy) - vy_temp(ix ,iym)) &
+                        + a4 * (vy_temp(ix,iy) - vy_temp(ix ,iyp)) ) / cv_v(ix,iy)
 
-        fz_visc(ix,iy) = (a1 * (vz(ix,iy) - vz(ixm,iy )) &
-                        + a2 * (vz(ix,iy) - vz(ixp,iy )) &
-                        + a3 * (vz(ix,iy) - vz(ix ,iym)) &
-                        + a4 * (vz(ix,iy) - vz(ix ,iyp)) ) / cv_v(ix,iy)
+        fz_visc(ix,iy) = (a1 * (vz_temp(ix,iy) - vz_temp(ixm,iy )) &
+                        + a2 * (vz_temp(ix,iy) - vz_temp(ixp,iy )) &
+                        + a3 * (vz_temp(ix,iy) - vz_temp(ix ,iym)) &
+                        + a4 * (vz_temp(ix,iy) - vz_temp(ix ,iyp)) ) / cv_v(ix,iy)
 
       END DO
     END DO
@@ -601,9 +643,9 @@ CONTAINS
           / (rho_v(i1,j1) + rho_v(i2,j2))
       cs_edge = MIN(cs_v(i1,j1), cs_v(i2,j2))
 
-      dvx = vx(i1,j1) - vx(i2,j2)
-      dvy = vy(i1,j1) - vy(i2,j2)
-      dvz = vz(i1,j1) - vz(i2,j2)
+      dvx = vx_temp(i1,j1) - vx_temp(i2,j2)
+      dvy = vy_temp(i1,j1) - vy_temp(i2,j2)
+      dvz = vz_temp(i1,j1) - vz_temp(i2,j2)
       dv2 = dvx**2 + dvy**2 + dvz**2
       dv = SQRT(dv2)
       psi = 0.0_num
@@ -614,12 +656,12 @@ CONTAINS
       END IF
 
 #ifdef SHOCKLIMITER
-      dvxm = vx(i0,j0) - vx(i1,j1)
-      dvxp = vx(i2,j2) - vx(i3,j3)
-      dvym = vy(i0,j0) - vy(i1,j1)
-      dvyp = vy(i2,j2) - vy(i3,j3)
-      dvzm = vz(i0,j0) - vz(i1,j1)
-      dvzp = vz(i2,j2) - vz(i3,j3)
+      dvxm = vx_temp(i0,j0) - vx_temp(i1,j1)
+      dvxp = vx_temp(i2,j2) - vx_temp(i3,j3)
+      dvym = vy_temp(i0,j0) - vy_temp(i1,j1)
+      dvyp = vy_temp(i2,j2) - vy_temp(i3,j3)
+      dvzm = vz_temp(i0,j0) - vz_temp(i1,j1)
+      dvzp = vz_temp(i2,j2) - vz_temp(i3,j3)
       IF (dv * dt / dx < 1.e-14_num) THEN
         rl = 1.0_num
         rr = 1.0_num
@@ -656,18 +698,18 @@ CONTAINS
         ixm = ix - 1
         ixp = ix + 1
 
-        a1 =  (vx(ixm,iym) - vx(ix ,iym))*(vx1(ixm,iym) - vx1(ix ,iym)) &
-            + (vy(ixm,iym) - vy(ix ,iym))*(vy1(ixm,iym) - vy1(ix ,iym)) &
-            + (vz(ixm,iym) - vz(ix ,iym))*(vz1(ixm,iym) - vz1(ix ,iym)) 
-        a2 =  (vx(ix ,iym) - vx(ix ,iy ))*(vx1(ix ,iym) - vx1(ix ,iy )) &
-            + (vy(ix ,iym) - vy(ix ,iy ))*(vy1(ix ,iym) - vy1(ix ,iy )) &
-            + (vz(ix ,iym) - vz(ix ,iy ))*(vz1(ix ,iym) - vz1(ix ,iy ))
-        a3 =  (vx(ix ,iy ) - vx(ixm,iy ))*(vx1(ix ,iy ) - vx1(ixm,iy )) &
-            + (vy(ix ,iy ) - vy(ixm,iy ))*(vy1(ix ,iy ) - vy1(ixm,iy )) &
-            + (vz(ix ,iy ) - vz(ixm,iy ))*(vz1(ix ,iy ) - vz1(ixm,iy ))
-        a4 =  (vx(ixm,iy ) - vx(ixm,iym))*(vx1(ixm,iy ) - vx1(ixm,iym)) &
-            + (vy(ixm,iy ) - vy(ixm,iym))*(vy1(ixm,iy ) - vy1(ixm,iym)) &
-            + (vz(ixm,iy ) - vz(ixm,iym))*(vz1(ixm,iy ) - vz1(ixm,iym))
+        a1 =  (vx_temp(ixm,iym) - vx_temp(ix ,iym))*(vx1(ixm,iym) - vx1(ix ,iym)) &
+            + (vy_temp(ixm,iym) - vy_temp(ix ,iym))*(vy1(ixm,iym) - vy1(ix ,iym)) &
+            + (vz_temp(ixm,iym) - vz_temp(ix ,iym))*(vz1(ixm,iym) - vz1(ix ,iym)) 
+        a2 =  (vx_temp(ix ,iym) - vx_temp(ix ,iy ))*(vx1(ix ,iym) - vx1(ix ,iy )) &
+            + (vy_temp(ix ,iym) - vy_temp(ix ,iy ))*(vy1(ix ,iym) - vy1(ix ,iy )) &
+            + (vz_temp(ix ,iym) - vz_temp(ix ,iy ))*(vz1(ix ,iym) - vz1(ix ,iy ))
+        a3 =  (vx_temp(ix ,iy ) - vx_temp(ixm,iy ))*(vx1(ix ,iy ) - vx1(ixm,iy )) &
+            + (vy_temp(ix ,iy ) - vy_temp(ixm,iy ))*(vy1(ix ,iy ) - vy1(ixm,iy )) &
+            + (vz_temp(ix ,iy ) - vz_temp(ixm,iy ))*(vz1(ix ,iy ) - vz1(ixm,iy ))
+        a4 =  (vx_temp(ixm,iy ) - vx_temp(ixm,iym))*(vx1(ixm,iy ) - vx1(ixm,iym)) &
+            + (vy_temp(ixm,iy ) - vy_temp(ixm,iym))*(vy1(ixm,iy ) - vy1(ixm,iym)) &
+            + (vz_temp(ixm,iy ) - vz_temp(ixm,iym))*(vz1(ixm,iy ) - vz1(ixm,iym))
 
         visc_heat(ix,iy) = &
             - 0.5_num * dyb(iy) * alpha1(ix,iy) * a1 &
@@ -698,13 +740,13 @@ CONTAINS
         ixm = ix - 1
 
         ! vx at Bx(i,j)
-        vxb  = (vx(ix ,iy ) + vx(ix ,iym)) * 0.5_num
+        vxb  = (vx_temp(ix ,iy ) + vx_temp(ix ,iym)) * 0.5_num
         ! vx at Bx(i-1,j)
-        vxbm = (vx(ixm,iy ) + vx(ixm,iym)) * 0.5_num
+        vxbm = (vx_temp(ixm,iy ) + vx_temp(ixm,iym)) * 0.5_num
         ! vy at By(i,j)
-        vyb  = (vy(ix ,iy ) + vy(ixm,iy )) * 0.5_num
+        vyb  = (vy_temp(ix ,iy ) + vy_temp(ixm,iy )) * 0.5_num
         ! vy at By(i,j-1)
-        vybm = (vy(ix ,iym) + vy(ixm,iym)) * 0.5_num
+        vybm = (vy_temp(ix ,iym) + vy_temp(ixm,iym)) * 0.5_num
 
         dvxdx = (vxb - vxbm) / dxb(ix)
         dvydy = (vyb - vybm) / dyb(iy)
@@ -713,27 +755,27 @@ CONTAINS
         cv1(ix,iy) = cv(ix,iy) * (1.0_num + dv)
 #ifdef CAUCHY
         ! vx at By(i,j)
-        vxb  = (vx(ix ,iy ) + vx(ixm,iy )) * 0.5_num
+        vxb  = (vx_temp(ix ,iy ) + vx_temp(ixm,iy )) * 0.5_num
         ! vx at By(i,j-1)
-        vxbm = (vx(ix ,iym) + vx(ixm,iym)) * 0.5_num
+        vxbm = (vx_temp(ix ,iym) + vx_temp(ixm,iym)) * 0.5_num
         ! vy at Bx(i,j)
-        vyb  = (vy(ix ,iy ) + vy(ix ,iym)) * 0.5_num
+        vyb  = (vy_temp(ix ,iy ) + vy_temp(ix ,iym)) * 0.5_num
         ! vy at Bx(i-1,j)
-        vybm = (vy(ixm,iy ) + vy(ixm,iym)) * 0.5_num
+        vybm = (vy_temp(ixm,iy ) + vy_temp(ixm,iym)) * 0.5_num
 
         dvxdy = (vxb - vxbm) / dyb(iy)
         dvydx = (vyb - vybm) / dxb(ix)
 
         ! vz at Bx(i,j)
-        vzb  = (vz(ix ,iy ) + vz(ix ,iym)) * 0.5_num
+        vzb  = (vz_temp(ix ,iy ) + vz_temp(ix ,iym)) * 0.5_num
         ! vz at Bx(i-1,j)
-        vzbm = (vz(ixm,iy ) + vz(ixm,iym)) * 0.5_num
+        vzbm = (vz_temp(ixm,iy ) + vz_temp(ixm,iym)) * 0.5_num
         ! vz at By(i,j)
         dvzdx = (vzb - vzbm) / dxb(ix)
 
-        vzb  = (vz(ix ,iy ) + vz(ixm,iy )) * 0.5_num
+        vzb  = (vz_temp(ix ,iy ) + vz_temp(ixm,iy )) * 0.5_num
         ! vz at By(i,j-1)
-        vzbm = (vz(ix ,iym) + vz(ixm,iym)) * 0.5_num
+        vzbm = (vz_temp(ix ,iym) + vz_temp(ixm,iym)) * 0.5_num
         dvzdy = (vzb - vzbm) / dyb(iy)
 
         w3 =  bx1(ix,iy) * dvxdx + by1(ix,iy) * dvxdy
@@ -748,9 +790,9 @@ CONTAINS
     END DO
 
 #ifndef CAUCHY
-    vx1(:,:) = vx(:,:)
-    vy1(:,:) = vy(:,:)
-    vz1(:,:) = vz(:,:)
+    vx1(:,:) = vx_temp(:,:)
+    vy1(:,:) = vy_temp(:,:)
+    vz1(:,:) = vz_temp(:,:)
     
     predictor_step = .TRUE.
     dt = 0.5_num * dt
@@ -806,7 +848,7 @@ CONTAINS
         ! Fix dt for Lagrangian step
         w1 = bx1(ix,iy)**2 + by1(ix,iy)**2 + bz1(ix,iy)**2
         ! Sound speed squared
-        rho0 = MAX(rho(ix,iy), none_zero)
+        rho0 = MAX(rho_temp(ix,iy), none_zero)
         w2 = w1 / rho0
         IF (boris .AND. (w2 .GE. va_max2)) THEN
           gamma_boris(ix,iy) = 1.0_num / (1.0_num + w2 / va_max2)
@@ -824,8 +866,8 @@ CONTAINS
         dt_local = MIN(dt_local, dt1)
 
         ! Check no node moves more than one cell to allow remap
-        dt2 = MIN(dxb(ix) / MAX(ABS(vx(ix,iy)),none_zero), &
-              dyb(iy) / MAX(ABS(vy(ix,iy)),none_zero))
+        dt2 = MIN(dxb(ix) / MAX(ABS(vx_temp(ix,iy)),none_zero), &
+              dyb(iy) / MAX(ABS(vy_temp(ix,iy)),none_zero))
         dt_local = MIN(dt_local, dt2)
 
         ! Note resistive limits assumes uniform resistivity hence cautious
@@ -844,7 +886,7 @@ CONTAINS
 
         ! Hall MHD CFL limit
         IF (hall_mhd) THEN
-          dt4 = 0.75_num * rho(ix,iy) * MIN(dxb(ix), dyb(iy))**2 &
+          dt4 = 0.75_num * rho_temp(ix,iy) * MIN(dxb(ix), dyb(iy))**2 &
             / MAX(lambda_i(ix,iy) * SQRT(w1), none_zero)
           dth_local = MIN(dth_local, dt4)
         END IF
@@ -954,20 +996,20 @@ CONTAINS
           ixp = ix + 1
 
           ! jx at Ex(i,j)
-          jx  = (bz(ix ,iyp) - bz(ix ,iy )) / dyc(iy)
+          jx  = (bz_temp(ix ,iyp) - bz_temp(ix ,iy )) / dyc(iy)
 
           ! jx at Ex(i+1,j)
-          jxp = (bz(ixp,iyp) - bz(ixp,iy )) / dyc(iy)
+          jxp = (bz_temp(ixp,iyp) - bz_temp(ixp,iy )) / dyc(iy)
 
           ! jy at Ey(i,j)
-          jy  = (bz(ix ,iy ) - bz(ixp,iy )) / dxc(ix)
+          jy  = (bz_temp(ix ,iy ) - bz_temp(ixp,iy )) / dxc(ix)
 
           ! jy at Ey(i,j+1)
-          jyp = (bz(ix ,iyp) - bz(ixp,iyp)) / dxc(ix)
+          jyp = (bz_temp(ix ,iyp) - bz_temp(ixp,iyp)) / dxc(ix)
 
           ! jz at Ez(i,j)
-          jz  = (by(ixp,iy ) - by(ix ,iy )) / dxc(ix) &
-              - (bx(ix ,iyp) - bx(ix ,iy )) / dyc(iy)
+          jz  = (by_temp(ixp,iy ) - by_temp(ix ,iy )) / dxc(ix) &
+              - (bx_temp(ix ,iyp) - bx_temp(ix ,iy )) / dyc(iy)
 
           ! Current at V
           jx = (jx + jxp) * 0.5_num
@@ -1013,9 +1055,9 @@ CONTAINS
     ALLOCATE( c3(0:nx,0:ny),  c4(0:nx,0:ny))
 #endif
 
-    bx1(-1:nx+2,-1:ny+2) = bx(-1:nx+2,-1:ny+2)
-    by1(-1:nx+2,-1:ny+2) = by(-1:nx+2,-1:ny+2)
-    bz1(-1:nx+2,-1:ny+2) = bz(-1:nx+2,-1:ny+2)
+    bx1(-1:nx+2,-1:ny+2) = bx_temp(-1:nx+2,-1:ny+2)
+    by1(-1:nx+2,-1:ny+2) = by_temp(-1:nx+2,-1:ny+2)
+    bz1(-1:nx+2,-1:ny+2) = bz_temp(-1:nx+2,-1:ny+2)
 
     ! Step 1
     CALL rkstep
@@ -1030,11 +1072,11 @@ CONTAINS
         ixm = ix - 1
         local_heating = (curlb(ix ,iy ) + curlb(ixm,iy )  &
             + curlb(ix ,iym) + curlb(ixm,iym)) &
-            * dt / (4.0_num * rho(ix,iy))
+            * dt / (4.0_num * rho_temp(ix,iy))
 
         ohmic_dep(ix,iy) = ohmic_dep(ix,iy) + local_heating
         
-        energy(ix,iy) = energy(ix,iy) + local_heating 
+        energy_temp(ix,iy) = energy_temp(ix,iy) + local_heating 
       END DO
     END DO
 
@@ -1043,16 +1085,16 @@ CONTAINS
         DO ix = 1, nx
           local_heating = (curlb(ix ,iy ) + curlb(ixm,iy )  &
               + curlb(ix ,iym) + curlb(ixm,iym)) &
-              * dt / (4.0_num * rho(ix,iy))
+              * dt / (4.0_num * rho_temp(ix,iy))
           cool_term_b(ix,iy) = alpha_av * local_heating  &
             + (1.0_num - alpha_av) * cool_term_b(ix,iy)
 
-          energy(ix,iy) = energy(ix,iy) - cool_term_b(ix,iy)
+          energy_temp(ix,iy) = energy_temp(ix,iy) - cool_term_b(ix,iy)
         END DO
       END DO
     END IF
 
-    energy = MAX(energy, 0.0_num)
+    energy_temp = MAX(energy_temp, 0.0_num)
     CALL energy_bcs
 
     DO iy = 0, ny
@@ -1121,9 +1163,9 @@ CONTAINS
       iym = iy - 1
       DO ix = 1, nx
         ixm = ix - 1
-        energy(ix,iy) = energy(ix,iy) &
+        energy_temp(ix,iy) = energy_temp(ix,iy) &
             + (c1(ix ,iy ) + c1(ixm,iy ) + c1(ix ,iym) + c1(ixm,iym)) &
-            * dt6 / (4.0_num * rho(ix,iy))
+            * dt6 / (4.0_num * rho_temp(ix,iy))
       END DO
     END DO
 
@@ -1150,12 +1192,12 @@ CONTAINS
       DO ix = 0, nx
         ixp = ix + 1
 
-        jx1 = (bz(ix ,iyp) - bz(ix ,iy )) / dyc(iy)
-        jx2 = (bz(ixp,iyp) - bz(ixp,iy )) / dyc(iy)
-        jy1 = (bz(ix ,iy ) - bz(ixp,iy )) / dxc(ix)
-        jy2 = (bz(ix ,iyp) - bz(ixp,iyp)) / dxc(ix)
-        jz1 = (by(ixp,iy ) - by(ix ,iy )) / dxc(ix) &
-            - (bx(ix ,iyp) - bx(ix ,iy )) / dyc(iy)
+        jx1 = (bz_temp(ix ,iyp) - bz_temp(ix ,iy )) / dyc(iy)
+        jx2 = (bz_temp(ixp,iyp) - bz_temp(ixp,iy )) / dyc(iy)
+        jy1 = (bz_temp(ix ,iy ) - bz_temp(ixp,iy )) / dxc(ix)
+        jy2 = (bz_temp(ix ,iyp) - bz_temp(ixp,iyp)) / dxc(ix)
+        jz1 = (by_temp(ixp,iy ) - by_temp(ix ,iy )) / dxc(ix) &
+            - (bx_temp(ix ,iyp) - bx_temp(ix ,iy )) / dyc(iy)
 
         jx_r(ix,iy) = (jx1 + jx2) * 0.5_num
         jy_r(ix,iy) = (jy1 + jy2) * 0.5_num
@@ -1175,12 +1217,12 @@ CONTAINS
       iym = iy - 1
       DO ix = -1, nx + 2
         ixm = ix - 1
-        bx1(ix,iy) = (bx(ix,iy) + bx(ixm,iy )) * 0.5_num
-        by1(ix,iy) = (by(ix,iy) + by(ix ,iym)) * 0.5_num
-        bz1(ix,iy) = bz(ix,iy)
+        bx1(ix,iy) = (bx_temp(ix,iy) + bx_temp(ixm,iy )) * 0.5_num
+        by1(ix,iy) = (by_temp(ix,iy) + by_temp(ix ,iym)) * 0.5_num
+        bz1(ix,iy) = bz_temp(ix,iy)
 
-        pressure(ix,iy) = (gamma - 1.0_num) * rho(ix,iy) &
-            * (energy(ix,iy) - (1.0_num - xi_n(ix,iy)) * ionise_pot)
+        pressure(ix,iy) = (gamma - 1.0_num) * rho_temp(ix,iy) &
+            * (energy_temp(ix,iy) - (1.0_num - xi_n(ix,iy)) * ionise_pot)
       END DO
     END DO
 
@@ -1209,12 +1251,12 @@ CONTAINS
         DO ix = 0, nx
           ixp = ix + 1
 
-          jx1 = (bz(ix ,iyp) - bz(ix ,iy )) / dyc(iy)
-          jx2 = (bz(ixp,iyp) - bz(ixp,iy )) / dyc(iy)
-          jy1 = (bz(ix ,iy ) - bz(ixp,iy )) / dxc(ix)
-          jy2 = (bz(ix ,iyp) - bz(ixp,iyp)) / dxc(ix)
-          jz  = (by(ixp,iy ) - by(ix ,iy )) / dxc(ix) &
-              - (bx(ix ,iyp) - bx(ix ,iy )) / dyc(iy)
+          jx1 = (bz_temp(ix ,iyp) - bz_temp(ix ,iy )) / dyc(iy)
+          jx2 = (bz_temp(ixp,iyp) - bz_temp(ixp,iy )) / dyc(iy)
+          jy1 = (bz_temp(ix ,iy ) - bz_temp(ixp,iy )) / dxc(ix)
+          jy2 = (bz_temp(ix ,iyp) - bz_temp(ixp,iyp)) / dxc(ix)
+          jz  = (by_temp(ixp,iy ) - by_temp(ix ,iy )) / dxc(ix) &
+              - (bx_temp(ix ,iyp) - bx_temp(ix ,iy )) / dyc(iy)
 
           jx = (jx1 + jx2) * 0.5_num
           jy = (jy1 + jy2) * 0.5_num
@@ -1233,21 +1275,21 @@ CONTAINS
         DO ix = 0, nx
           ixp = ix + 1
 
-          jx1 = (bz(ix ,iyp) - bz(ix ,iy )) / dyc(iy)
-          jx2 = (bz(ixp,iyp) - bz(ixp,iy )) / dyc(iy)
-          jy1 = (bz(ix ,iy ) - bz(ixp,iy )) / dxc(ix)
-          jy2 = (bz(ix ,iyp) - bz(ixp,iyp)) / dxc(ix)
-          jz  = (by(ixp,iy ) - by(ix ,iy )) / dxc(ix) &
-              - (bx(ix ,iyp) - bx(ix ,iy )) / dyc(iy)
+          jx1 = (bz_temp(ix ,iyp) - bz_temp(ix ,iy )) / dyc(iy)
+          jx2 = (bz_temp(ixp,iyp) - bz_temp(ixp,iy )) / dyc(iy)
+          jy1 = (bz_temp(ix ,iy ) - bz_temp(ixp,iy )) / dxc(ix)
+          jy2 = (bz_temp(ix ,iyp) - bz_temp(ixp,iyp)) / dxc(ix)
+          jz  = (by_temp(ixp,iy ) - by_temp(ix ,iy )) / dxc(ix) &
+              - (bx_temp(ix ,iyp) - bx_temp(ix ,iy )) / dyc(iy)
 
           jx = (jx1 + jx2) * 0.5_num
           jy = (jy1 + jy2) * 0.5_num
 
           ! B at vertices
-          bxv = (bx(ix,iy ) + bx(ix ,iyp)) * 0.5_num
-          byv = (by(ix,iy ) + by(ixp,iy )) * 0.5_num
-          bzv = (bz(ix,iy ) + bz(ixp,iy ) &
-              +  bz(ix,iyp) + bz(ixp,iyp)) * 0.25_num
+          bxv = (bx_temp(ix,iy ) + bx_temp(ix ,iyp)) * 0.5_num
+          byv = (by_temp(ix,iy ) + by_temp(ixp,iy )) * 0.5_num
+          bzv = (bz_temp(ix,iy ) + bz_temp(ixp,iy ) &
+              +  bz_temp(ix,iyp) + bz_temp(ixp,iyp)) * 0.25_num
 
           magn_b = bxv**2 + byv**2 + bzv**2
 
@@ -1311,9 +1353,9 @@ CONTAINS
     half_dt = dt * 0.5_num
     dt6 = dt * sixth
 
-    bx1(0:nx+1,0:ny+1) = bx(0:nx+1,0:ny+1)
-    by1(0:nx+1,0:ny+1) = by(0:nx+1,0:ny+1)
-    bz1(0:nx+1,0:ny+1) = bz(0:nx+1,0:ny+1)
+    bx1(0:nx+1,0:ny+1) = bx_temp(0:nx+1,0:ny+1)
+    by1(0:nx+1,0:ny+1) = by_temp(0:nx+1,0:ny+1)
+    bz1(0:nx+1,0:ny+1) = bz_temp(0:nx+1,0:ny+1)
 
     ! Step 1
     CALL rkstep1(half_dt)
@@ -1387,12 +1429,12 @@ CONTAINS
       DO ix = -1, nx + 1
         ixp = ix + 1
 
-        jx1 = (bz(ix ,iyp) - bz(ix ,iy )) / dyc(iy)
-        jx2 = (bz(ixp,iyp) - bz(ixp,iy )) / dyc(iy)
-        jy1 = (bz(ix ,iy ) - bz(ixp,iy )) / dxc(ix)
-        jy2 = (bz(ix ,iyp) - bz(ixp,iyp)) / dxc(ix)
-        jz1 = (by(ixp,iy ) - by(ix ,iy )) / dxc(ix) &
-            - (bx(ix ,iyp) - bx(ix ,iy )) / dyc(iy)
+        jx1 = (bz_temp(ix ,iyp) - bz_temp(ix ,iy )) / dyc(iy)
+        jx2 = (bz_temp(ixp,iyp) - bz_temp(ixp,iy )) / dyc(iy)
+        jy1 = (bz_temp(ix ,iy ) - bz_temp(ixp,iy )) / dxc(ix)
+        jy2 = (bz_temp(ix ,iyp) - bz_temp(ixp,iyp)) / dxc(ix)
+        jz1 = (by_temp(ixp,iy ) - by_temp(ix ,iy )) / dxc(ix) &
+            - (bx_temp(ix ,iyp) - bx_temp(ix ,iy )) / dyc(iy)
 
         jx(ix,iy) = (jx1 + jx2) * 0.5_num
         jy(ix,iy) = (jy1 + jy2) * 0.5_num
@@ -1413,15 +1455,15 @@ CONTAINS
         ixp  = ix + 1
         ixp2 = ix + 2
 
-        bxv = (bx(ix,iy) * dyb(iy) + bx(ix,iyp) * dyb(iyp)) &
+        bxv = (bx_temp(ix,iy) * dyb(iy) + bx_temp(ix,iyp) * dyb(iyp)) &
             / (dyb(iy) + dyb(iyp))
-        byv = (by(ix,iy) * dxb(ix) + by(ixp,iy) * dxb(ixp)) &
+        byv = (by_temp(ix,iy) * dxb(ix) + by_temp(ixp,iy) * dxb(ixp)) &
             / (dxb(ix) + dxb(ixp))
-        bzv = (bz(ix,iy ) * cv(ix,iy ) + bz(ixp,iy ) * cv(ixp,iy ) &
-            +  bz(ix,iyp) * cv(ix,iyp) + bz(ixp,iyp) * cv(ixp,iyp))
+        bzv = (bz_temp(ix,iy ) * cv(ix,iy ) + bz_temp(ixp,iy ) * cv(ixp,iy ) &
+            +  bz_temp(ix,iyp) * cv(ix,iyp) + bz_temp(ixp,iyp) * cv(ixp,iyp))
 
-        rho_v = (rho(ix,iy ) * cv(ix,iy ) + rho(ixp,iy ) * cv(ixp,iy ) &
-            +    rho(ix,iyp) * cv(ix,iyp) + rho(ixp,iyp) * cv(ixp,iyp))
+        rho_v = (rho_temp(ix,iy ) * cv(ix,iy ) + rho_temp(ixp,iy ) * cv(ixp,iy ) &
+            +    rho_temp(ix,iyp) * cv(ix,iyp) + rho_temp(ixp,iyp) * cv(ixp,iyp))
 
         area = (cv(ix,iy) + cv(ixp,iy) + cv(ix,iyp) + cv(ixp,iyp))
         bzv = bzv / area
@@ -1430,10 +1472,10 @@ CONTAINS
         ! Evaluate the flux due to the Hall term but upwind in direction of
         ! negative current density i.e. upwind in the direction of the
         ! effective advection velocity
-        fm  = (bz(ix,iym ) + bz(ixp,iym )) * 0.5_num
-        fi  = (bz(ix,iy  ) + bz(ixp,iy  )) * 0.5_num
-        fp  = (bz(ix,iyp ) + bz(ixp,iyp )) * 0.5_num
-        fp2 = (bz(ix,iyp2) + bz(ixp,iyp2)) * 0.5_num
+        fm  = (bz_temp(ix,iym ) + bz_temp(ixp,iym )) * 0.5_num
+        fi  = (bz_temp(ix,iy  ) + bz_temp(ixp,iy  )) * 0.5_num
+        fp  = (bz_temp(ix,iyp ) + bz_temp(ixp,iyp )) * 0.5_num
+        fp2 = (bz_temp(ix,iyp2) + bz_temp(ixp,iyp2)) * 0.5_num
 
         dfm = fi - fm
         dfi = fp - fi
@@ -1464,10 +1506,10 @@ CONTAINS
         f2 = jz(ix,iy) * byv
         hxflux(ix,iy) = lambda_i(ix,iy) * (f1 - f2) / rho_v
 
-        fm  = (bz(ixm ,iy) + bz(ixm ,iyp)) * 0.5_num
-        fi  = (bz(ix  ,iy) + bz(ix  ,iyp)) * 0.5_num
-        fp  = (bz(ixp ,iy) + bz(ixp ,iyp)) * 0.5_num
-        fp2 = (bz(ixp2,iy) + bz(ixp2,iyp)) * 0.5_num
+        fm  = (bz_temp(ixm ,iy) + bz_temp(ixm ,iyp)) * 0.5_num
+        fi  = (bz_temp(ix  ,iy) + bz_temp(ix  ,iyp)) * 0.5_num
+        fp  = (bz_temp(ixp ,iy) + bz_temp(ixp ,iyp)) * 0.5_num
+        fp2 = (bz_temp(ixp2,iy) + bz_temp(ixp2,iyp)) * 0.5_num
 
         dfm = fi - fm
         dfi = fp - fi
@@ -1499,10 +1541,10 @@ CONTAINS
 
         hyflux(ix,iy) = lambda_i(ix,iy) * (f1 - f2) / rho_v
 
-        fm  = by(ixm ,iy)
-        fi  = by(ix  ,iy)
-        fp  = by(ixp ,iy)
-        fp2 = by(ixp2,iy)
+        fm  = by_temp(ixm ,iy)
+        fi  = by_temp(ix  ,iy)
+        fp  = by_temp(ixp ,iy)
+        fp2 = by_temp(ixp2,iy)
 
         dfm = fi - fm
         dfi = fp - fi
@@ -1531,10 +1573,10 @@ CONTAINS
 
         f1 = (fu + Di * (1.0_num - phi)) * j_advect
 
-        fm  = bx(ix,iym )
-        fi  = bx(ix,iy  )
-        fp  = bx(ix,iyp )
-        fp2 = bx(ix,iyp2)
+        fm  = bx_temp(ix,iym )
+        fi  = bx_temp(ix,iy  )
+        fp  = bx_temp(ix,iyp )
+        fp2 = bx_temp(ix,iyp2)
 
         dfm = fi - fm
         dfi = fp - fi
@@ -1589,7 +1631,7 @@ CONTAINS
     DO iy = 1, ny
       iym = iy - 1
       DO ix = 0, nx
-        bx(ix,iy) = bx1(ix,iy) &
+        bx_temp(ix,iy) = bx1(ix,iy) &
             + (kz(ix,iy ) - kz(ix,iym)) * dt / dyb(iy)
       END DO
     END DO
@@ -1597,7 +1639,7 @@ CONTAINS
     DO iy = 0, ny
       DO ix = 1, nx
         ixm = ix - 1
-        by(ix,iy) = by1(ix,iy) &
+        by_temp(ix,iy) = by1(ix,iy) &
             - (kz(ix ,iy) - kz(ixm,iy)) * dt / dxb(ix)
       END DO
     END DO
@@ -1606,7 +1648,7 @@ CONTAINS
       iym = iy - 1
       DO ix = 1, nx
         ixm = ix - 1
-        bz(ix,iy) = bz1(ix,iy) &
+        bz_temp(ix,iy) = bz1(ix,iy) &
             + (ky(ix ,iy ) - ky(ixm,iy ) &
             +  ky(ix ,iym) - ky(ixm,iym) &
             -  kx(ix ,iy ) + kx(ix ,iym) &

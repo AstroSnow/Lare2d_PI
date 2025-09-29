@@ -23,6 +23,8 @@ CONTAINS
 
         ALLOCATE(xi_n(-1:nx+2, -1:ny+2))
         xi_n = 0.0_num
+
+        flag_neutral_step=.FALSE.
         
     END SUBROUTINE setup_two_fluid
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
