@@ -126,7 +126,7 @@ CONTAINS
     END DO
 
     CALL edge_shock_viscosity
-    CALL set_dt
+    CALL set_dt(rho,vx,vy,vz,energy,bx,by,bz)
     dt2 = dt * 0.5_num
 
     energy(:,:) = MAX(energy(:,:), 0.0_num)
@@ -690,11 +690,16 @@ CONTAINS
   ! Sets CFL limited step
   !****************************************************************************
 
-  SUBROUTINE set_dt
+  SUBROUTINE set_dt(rho,vx,vy,vz,energy,bx,by,bz)
 
     ! Assumes all variables are defined at the same point. Be careful with
     ! setting 'dt_multiplier' if you expect massive changes across cells.
 
+    REAL(num),intent(in):: rho(-1:nx+1,-1:ny+1)
+    REAL(num),intent(in):: vx(-2:nx+2, -2:ny+2),vy(-2:nx+2, -2:ny+2),vz(-2:nx+2, -2:ny+2)
+    REAL(num),intent(in):: energy(-1:nx+2,-1:ny+2)
+    REAL(num),intent(in):: bx(-1:nx+2,-1:ny+2),by(-1:nx+2,-1:ny+2),bz(-1:nx+2,-1:ny+2)
+    
     REAL(num) :: cs2, c_visc2, rho0, length
     REAL(num) :: dxlocal, dt_local, dtr, dtr_local, dth, dth_local
     REAL(num) :: dt1, dt2, dt3, dt4, ss_reduct_fac
