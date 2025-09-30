@@ -700,7 +700,7 @@ CONTAINS
     ! setting 'dt_multiplier' if you expect massive changes across cells.
 
     REAL(num) :: cs2, c_visc2, rho0, length
-    REAL(num) :: dxlocal, dt_local, dtr_local, dth_local
+    REAL(num) :: dxlocal, dt_local, dtr, dtr_local, dth, dth_local
     REAL(num) :: dt1, dt2, dt3, dt4, ss_reduct_fac
     REAL(num) :: dt_locals(3), dt_min(3)
     REAL(num) :: dt0, time_dump, time_rem
@@ -788,60 +788,6 @@ CONTAINS
     dt  = dt_multiplier * dt_min(1)
     dtr = dt_multiplier * dt_min(2)
     dth = dt_multiplier * dt_min(3)
-
-    IF (force_exact_time_outputs) THEN
-
-      time_dump = time_prev + dt_snapshots
-      IF (t_end < time_dump) time_dump = t_end
-  
-      IF (step < nramp_start) THEN
-        ! At start of simulation, slowly ramp up from zero dt
-        dt_reason = 's'
-        dt = (dt_fudge + (step / REAL(nramp_start,num))**2) * dt
-      ELSE IF (nramp > 0) THEN
-        ! After output dump, slowly ramp up from old dt
-        dt_reason = 'u'
-        dt0 = dt_previous + nramp * dt_factor
-        nramp = nramp - 1
-        dt  = MIN(dt0, dt)
-      ELSE IF (nramp < 0) THEN
-        ! Slowly ramp down dt until next output dump
-        dt_reason = 'd'
-        nramp = nramp - 1
-        dt0 = dt
-        dt  = dt_previous - nramp * dt_factor
-        dt  = MIN(dt0, dt)
-        IF (nramp == -nrsteps .OR. dt > (time_dump - time)) THEN
-          dt = time_dump - time
-          nramp = -nramp
-        END IF
-        IF (dt < t_end * 1.e-10_num) dt = dt0
-      ELSE IF (nramp_steps > 0) THEN
-        ! Less than nramp steps until next output or end of simulation
-        time_rem = time_dump - time
-        IF (time_rem > 0.1_num * dt .AND. nramp_steps * dt > time_rem) THEN
-          nrsteps = FLOOR(time_rem / dt) + 1
-          IF (nramp_steps < nrsteps) nrsteps = nramp_steps
-          dt_factor = 2.0_num * (time_rem - nrsteps * dt) &
-              / (nrsteps**2 + nrsteps)
-          dt_reason = 'd'
-          nramp = -1
-          IF (nrsteps == 1) nramp = 0
-          dt0 = dt
-          dt_previous = dt0
-          dt  = dt_previous + dt_factor
-          dt  = MIN(dt0, dt)
-          IF (dt < t_end * 1.e-10_num) dt = dt0
-        END IF
-      END IF
-  
-      IF (is_restart) THEN
-        dt_reason = 'r'
-        dt = dt_from_restart
-        nramp = nramp + 1
-      END IF
-
-    END IF
 
 
     time = time + dt
