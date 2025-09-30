@@ -21,7 +21,7 @@ MODULE lagran
   USE shared_data, only : num,nx,ny,cv1_plasma,sixth,cowling_resistivity,none_zero,boris,comm,errcode,&
             dt,dt_factor,dt_from_restart,dt_multiplier,dt_previous,dt_snapshots,gamma,hall_mhd,&
             largest_number,MPI_MIN,mpireal,restart,time,predictor_step,step,va_max2,any_open,&
-            visc1,visc2,ionise_pot,dxc,dyc
+            visc1,visc2,ionise_pot,dxb,dyb,dxc,dyc,gamma_boris
   !USE boundary, only : energy_bcs
   !USE neutral
   !USE conduct
@@ -48,7 +48,7 @@ MODULE lagran
   REAL(num), DIMENSION(:,:), ALLOCATABLE :: vx_temp,vy_temp,vz_temp
   REAL(num), DIMENSION(:,:), ALLOCATABLE :: bx_temp,by_temp,bz_temp
   
-  REAL(num), DIMENSION(:,:), ALLOCATABLE :: bx1, by1, bz1
+  REAL(num), DIMENSION(:,:), ALLOCATABLE :: bx1, by1, bz1,p_visc
   
   REAL(num)::dt2 !This is the timestep/2 for the predictor step
   
@@ -345,7 +345,6 @@ CONTAINS
     REAL(num) :: b2, rmin
     REAL(num) :: a1, a2, a3, a4
     REAL(num), DIMENSION(:,:), ALLOCATABLE :: cs, cs_v
-    REAL(num),DIMENSION(:,:),ALLOCATABLE :: p_visc
     INTEGER :: i0, i1, i2, i3, j0, j1, j2, j3
     LOGICAL, SAVE :: first_call = .TRUE.
     
