@@ -24,8 +24,9 @@ MODULE zremap
 
 CONTAINS
 
-  SUBROUTINE remap_z
+  SUBROUTINE remap_z(cv1)
 
+    REAL(num),intent(inout)::cv1(-1:nx+2, -1:ny+2)
     REAL(num) :: v_advect, flux1, flux2
 
     DO iy = -1, ny + 1

@@ -112,10 +112,10 @@ MODULE shared_data
   REAL(num), DIMENSION(:,:), ALLOCATABLE :: vn_z, vn_z1
   REAL(num), DIMENSION(:,:), ALLOCATABLE :: alpha_c
 
-  REAL(num), DIMENSION(:,:), ALLOCATABLE :: delta_ke, p_visc
+  REAL(num), DIMENSION(:,:), ALLOCATABLE :: delta_ke
   REAL(num), DIMENSION(:,:), ALLOCATABLE :: cool_term_b, cool_term_v
   REAL(num), DIMENSION(:,:), ALLOCATABLE :: visc_dep, ohmic_dep
-  REAL(num), DIMENSION(:,:), ALLOCATABLE :: eta, cv, cv1
+  REAL(num), DIMENSION(:,:), ALLOCATABLE :: eta, cv, cv1_plasma, cv1_neutral
   REAL(num), DIMENSION(:,:), ALLOCATABLE :: lambda_i, visc3, larsen_factor
 
   REAL(num), DIMENSION(:), ALLOCATABLE :: xc, xb, dxb, dxc, xb_global

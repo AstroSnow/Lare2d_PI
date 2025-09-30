@@ -18,7 +18,9 @@
 
 MODULE lagran
 
-  USE shared_data, only : num,nx,ny,ix
+  USE shared_data, only : num,nx,ny,cv1_plasma,sixth,cowling_resistivity,none_zero,boris,comm,errcode,&
+            dt,dt_factor,dt_from_restart,dt_multiplier,dt_previous,dt_snapshots,gamma,hall_mhd,&
+            largest_number,MPI_MIN,mpireal
   !USE boundary, only : energy_bcs
   !USE neutral
   !USE conduct
@@ -46,6 +48,8 @@ MODULE lagran
   REAL(num), DIMENSION(:,:), ALLOCATABLE :: bx_temp,by_temp,bz_temp
   
   REAL(num), DIMENSION(:,:), ALLOCATABLE :: bx1, by1, bz1
+  
+  INTEGER :: ix,iy,ixm,iym,ixp,iyp
 
 CONTAINS
 
@@ -53,10 +57,14 @@ CONTAINS
   ! This subroutine manages the progress of the lagrangian step
   !****************************************************************************
 
-  SUBROUTINE lagrangian_step
+  SUBROUTINE lagrangian_step(rho,vx,vy,vz,energy,bx,by,bz)
 
     INTEGER :: substeps, subcycle
     REAL(num) :: actual_dt, dt_sub
+    REAL(num),intent(inout):: rho(-1:nx+1,-1:ny+1)
+    REAL(num),intent(inout):: vx(-2:nx+2, -2:ny+2),vy(-2:nx+2, -2:ny+2),vz(-2:nx+2, -2:ny+2)
+    REAL(num),intent(inout):: energy(-1:nx+2,-1:ny+2)
+    REAL(num),intent(inout):: bx(-1:nx+2,-1:ny+2),by(-1:nx+2,-1:ny+2),bz(-1:nx+2,-1:ny+2)
 
 #ifndef CAUCHY
     ALLOCATE(bx0(-2:nx+2,-1:ny+2))
@@ -111,17 +119,13 @@ CONTAINS
       END DO
     END DO
 
-    IF (use_viscous_damping) CALL viscous_damping
     CALL edge_shock_viscosity
     CALL set_dt
     dt2 = dt * 0.5_num
 
-    delta_energy(:,:) = 0.0_num
-    energy0(:,:) = energy(:,:)
-    energy(:,:) = energy0(:,:) + delta_energy(:,:)
     energy(:,:) = MAX(energy(:,:), 0.0_num)
 
-    CALL predictor_corrector_step
+    CALL predictor_corrector_step(energy,bx,by,bz,cv1_plasma)
 
     DEALLOCATE(bx1, by1, bz1, alpha1, alpha2)
     DEALLOCATE(visc_heat, pressure, rho_v, cv_v, flux_x, flux_y, flux_z, curlb)
@@ -144,8 +148,11 @@ CONTAINS
   ! The main predictor / corrector step which advances the momentum equation
   !****************************************************************************
 
-  SUBROUTINE predictor_corrector_step
+  SUBROUTINE predictor_corrector_step(energy,bx,by,bz,cv1)
 
+    REAL(num),intent(inout):: energy(-1:nx+2,-1:ny+2)
+    REAL(num),intent(inout):: bx(-1:nx+2,-1:ny+2),by(-1:nx+2,-1:ny+2),bz(-1:nx+2,-1:ny+2)
+    REAL(num),intent(inout)::cv1(-1:nx+2, -1:ny+2)
     REAL(num) :: pp, ppx, ppy, ppxy
     REAL(num) :: e1
     REAL(num) :: vxb, vxbm, vyb, vybm
@@ -333,41 +340,6 @@ CONTAINS
 
 
 
-  SUBROUTINE viscous_damping
-
-    qx = 0.0_num
-    qy = 0.0_num
-    qz = 0.0_num
-
-    DO iy = 0, ny
-      iyp = iy + 1
-      iym = iy - 1
-      DO ix = 0, nx
-        ixp = ix + 1
-        ixm = ix - 1
-        qx(ix,iy) = visc3(ix,iy)  &
-           * (((vx(ixp,iy) - vx(ix,iy))/ dxb(ixp) - (vx(ix,iy) - vx(ixm,iy))/ dxb(ix)) / dxc(ix) &
-           +  ((vx(ix,iyp) - vx(ix,iy))/ dyb(iyp) - (vx(ix,iy) - vx(ix,iym))/ dyb(iy)) / dyc(iy)) 
-        qy(ix,iy) = visc3(ix,iy)  &
-           * (((vy(ixp,iy) - vy(ix,iy))/ dxb(ixp) - (vy(ix,iy) - vy(ixm,iy))/ dxb(ix)) / dxc(ix) &
-           +  ((vy(ix,iyp) - vy(ix,iy))/ dyb(iyp) - (vy(ix,iy) - vy(ix,iym))/ dyb(iy)) / dyc(iy)) 
-        qz(ix,iy) = visc3(ix,iy)  &
-           * (((vz(ixp,iy) - vz(ix,iy))/ dxb(ixp) - (vz(ix,iy) - vz(ixm,iy))/ dxb(ix)) / dxc(ix) &
-           +  ((vz(ix,iyp) - vz(ix,iy))/ dyb(iyp) - (vz(ix,iy) - vz(ix,iym))/ dyb(iy)) / dyc(iy)) 
-      END DO
-    END DO
-
-    DO iy = 0, ny
-      DO ix = 0, nx
-        vx(ix,iy) = vx(ix,iy) + dt * qx(ix,iy)
-        vy(ix,iy) = vy(ix,iy) + dt * qy(ix,iy)
-        vz(ix,iy) = vz(ix,iy) + dt * qz(ix,iy)
-      END DO
-    END DO
-
-  END SUBROUTINE viscous_damping
-
-
   !****************************************************************************
   ! This subroutine calculates the viscous effects and updates the
   ! magnetic field
@@ -379,9 +351,11 @@ CONTAINS
     REAL(num) :: b2, rmin
     REAL(num) :: a1, a2, a3, a4
     REAL(num), DIMENSION(:,:), ALLOCATABLE :: cs, cs_v
+    REAL(num),DIMENSION(:,:),ALLOCATABLE :: p_visc
     INTEGER :: i0, i1, i2, i3, j0, j1, j2, j3
     LOGICAL, SAVE :: first_call = .TRUE.
 
+    ALLOCATE(p_visc(-1:nx+2, -1:ny+2))
     ALLOCATE(cs(-1:nx+2,-1:ny+2), cs_v(-1:nx+1,-1:ny+1))
 
     IF (first_call) THEN

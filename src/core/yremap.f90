@@ -34,8 +34,9 @@ CONTAINS
 
   ! Remap onto original Eulerian grid
 
-  SUBROUTINE remap_y
-
+  SUBROUTINE remap_y(cv1)
+  
+    REAL(num),intent(inout)::cv1(-1:nx+2, -1:ny+2)
     REAL(num) :: vxb, vxbm, vyb, vybm, dv
 
     IF (predictor_step) THEN

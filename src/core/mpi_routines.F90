@@ -253,7 +253,6 @@ CONTAINS
     ny = n_global_max(2) - n_global_min(2)
 
     ALLOCATE(energy(-1:nx+2, -1:ny+2))
-    ALLOCATE(p_visc(-1:nx+2, -1:ny+2))
     ALLOCATE(rho(-1:nx+2, -1:ny+2))
     ALLOCATE(vx (-2:nx+2, -2:ny+2))
     ALLOCATE(vy (-2:nx+2, -2:ny+2))
@@ -284,6 +283,7 @@ CONTAINS
         ALLOCATE(vn_z(-2:nx+2, -2:ny+2))
         ALLOCATE(vn_z1(-2:nx+2, -2:ny+2))
         ALLOCATE(alpha_c(-1:nx+2, -1:ny+2))
+        ALLOCATE(cv1_neutral(-1:nx+2, -1:ny+2))
     ENDIF
 
     IF (cooling_term) THEN
@@ -294,7 +294,7 @@ CONTAINS
     END IF
 
     ! Shocked and resistive need to be larger to allow offset = 4 in shock_test
-    ALLOCATE(cv(-1:nx+2, -1:ny+2), cv1(-1:nx+2, -1:ny+2))
+    ALLOCATE(cv(-1:nx+2, -1:ny+2), cv1_plasma(-1:nx+2, -1:ny+2))
     ALLOCATE(xc(-1:nx+2), xb(-2:nx+2), dxc(-1:nx+1), dxb(-1:nx+2))
     ALLOCATE(yc(-1:ny+2), yb(-2:ny+2), dyc(-1:ny+1), dyb(-1:ny+2))
     ALLOCATE(grav(-1:ny+2))
@@ -307,7 +307,6 @@ CONTAINS
 
     IF (rank == 0) start_time = MPI_WTIME()
 
-    p_visc = 0.0_num
     eta = 0.0_num
     visc_dep = 0.0_num
     ohmic_dep = 0.0_num
@@ -349,7 +348,6 @@ CONTAINS
     DEALLOCATE(vx, vy, vz)
     DEALLOCATE(vx1, vy1, vz1)
     DEALLOCATE(bx, by, bz)
-    DEALLOCATE(p_visc)
     DEALLOCATE(eta)
     DEALLOCATE(cv, cv1)
     DEALLOCATE(xc, xb, dxb, dxc)

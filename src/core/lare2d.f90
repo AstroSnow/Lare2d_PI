@@ -87,12 +87,7 @@ PROGRAM lare2d
     IF ((step >= nsteps .AND. nsteps >= 0) .OR. (time >= t_end)) EXIT
     step = step + 1
     IF (eos_number /= EOS_IDEAL) CALL neutral_fraction ! neutral.f90
-    CALL lagrangian_step             ! lagran.f90
-    IF (two_fluid_flag) then
-        flag_neutral_step=.TRUE.
-        CALL lagrangian_step
-        flag_neutral_step=.FALSE.
-    ENDIF
+    CALL lagrangian_step(rho,vx,vy,vz,energy,bx,by,bz)             ! lagran.f90
     CALL eulerian_remap(step)        ! remap.f90
     IF (rke) CALL energy_correction  ! diagnostics.f90
     CALL eta_calc                    ! lagran.f90

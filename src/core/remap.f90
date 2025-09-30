@@ -60,29 +60,29 @@ CONTAINS
     ! Strang ordering
     SELECT CASE(case_test)
     CASE (0)
-      CALL remap_x
-      CALL remap_y
-      CALL remap_z
+      CALL remap_x(cv1_plasma)
+      CALL remap_y(cv1_plasma)
+      CALL remap_z(cv1_plasma)
     CASE (1)
-      CALL remap_y
-      CALL remap_z
-      CALL remap_x
+      CALL remap_y(cv1_plasma)
+      CALL remap_z(cv1_plasma)
+      CALL remap_x(cv1_plasma)
     CASE (2)
-      CALL remap_z
-      CALL remap_x
-      CALL remap_y
+      CALL remap_z(cv1_plasma)
+      CALL remap_x(cv1_plasma)
+      CALL remap_y(cv1_plasma)
     CASE (3)
-      CALL remap_x
-      CALL remap_z
-      CALL remap_y
+      CALL remap_x(cv1_plasma)
+      CALL remap_z(cv1_plasma)
+      CALL remap_y(cv1_plasma)
     CASE (4)
-      CALL remap_z
-      CALL remap_y
-      CALL remap_x
+      CALL remap_z(cv1_plasma)
+      CALL remap_y(cv1_plasma)
+      CALL remap_x(cv1_plasma)
     CASE (5)
-      CALL remap_y
-      CALL remap_x
-      CALL remap_z
+      CALL remap_y(cv1_plasma)
+      CALL remap_x(cv1_plasma)
+      CALL remap_z(cv1_plasma)
     END SELECT
 
     DO iy = -1, ny + 2
