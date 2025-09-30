@@ -1114,42 +1114,4 @@ CONTAINS
   END SUBROUTINE rkstep1
 
 
-
-  SUBROUTINE bstep(kx, ky, kz, dt)
-
-    REAL(num), DIMENSION(0:,0:), INTENT(IN) :: kx, ky, kz
-    REAL(num), INTENT(IN) :: dt
-
-    DO iy = 1, ny
-      iym = iy - 1
-      DO ix = 0, nx
-        bx(ix,iy) = bx1(ix,iy) &
-            + (kz(ix,iy ) - kz(ix,iym)) * dt / dyb(iy)
-      END DO
-    END DO
-
-    DO iy = 0, ny
-      DO ix = 1, nx
-        ixm = ix - 1
-        by(ix,iy) = by1(ix,iy) &
-            - (kz(ix ,iy) - kz(ixm,iy)) * dt / dxb(ix)
-      END DO
-    END DO
-
-    DO iy = 1, ny
-      iym = iy - 1
-      DO ix = 1, nx
-        ixm = ix - 1
-        bz(ix,iy) = bz1(ix,iy) &
-            + (ky(ix ,iy ) - ky(ixm,iy ) &
-            +  ky(ix ,iym) - ky(ixm,iym) &
-            -  kx(ix ,iy ) + kx(ix ,iym) &
-            -  kx(ixm,iy ) + kx(ixm,iym)) * dt / cv(ix,iy)
-      END DO
-    END DO
-
-    CALL bfield_bcs
-
-  END SUBROUTINE bstep
-
 END MODULE lagran
