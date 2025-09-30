@@ -20,7 +20,8 @@ MODULE lagran
 
   USE shared_data, only : num,nx,ny,cv1_plasma,sixth,cowling_resistivity,none_zero,boris,comm,errcode,&
             dt,dt_factor,dt_from_restart,dt_multiplier,dt_previous,dt_snapshots,gamma,hall_mhd,&
-            largest_number,MPI_MIN,mpireal,restart,time,predictor_step,step
+            largest_number,MPI_MIN,mpireal,restart,time,predictor_step,step,va_max2,any_open,&
+            visc1,visc2,ionise_pot
   !USE boundary, only : energy_bcs
   !USE neutral
   !USE conduct
@@ -48,6 +49,11 @@ MODULE lagran
   REAL(num), DIMENSION(:,:), ALLOCATABLE :: bx_temp,by_temp,bz_temp
   
   REAL(num), DIMENSION(:,:), ALLOCATABLE :: bx1, by1, bz1
+  
+  REAL(num)::dt2 !This is the timestep/2 for the predictor step
+  
+  !I am not sure what these variables are but they don't seem to be globally passed.
+  REAL(num)::w1,w2
   
   INTEGER :: ix,iy,ixm,iym,ixp,iyp
 
@@ -318,8 +324,8 @@ CONTAINS
 
         rho(ix,iy) = rho(ix,iy) / (1.0_num + dv)
 
-        total_visc_heating = total_visc_heating &
-            + dt * visc_heat(ix,iy) * cv(ix,iy)
+        !total_visc_heating = total_visc_heating &
+        !    + dt * visc_heat(ix,iy) * cv(ix,iy)
 
       END DO
     END DO
@@ -342,6 +348,8 @@ CONTAINS
     REAL(num),DIMENSION(:,:),ALLOCATABLE :: p_visc
     INTEGER :: i0, i1, i2, i3, j0, j1, j2, j3
     LOGICAL, SAVE :: first_call = .TRUE.
+    
+    REAL(num)::visc2_norm
 
     ALLOCATE(p_visc(-1:nx+2, -1:ny+2))
     ALLOCATE(cs(-1:nx+2,-1:ny+2), cs_v(-1:nx+1,-1:ny+1))
