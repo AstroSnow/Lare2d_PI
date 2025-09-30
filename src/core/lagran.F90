@@ -20,7 +20,7 @@ MODULE lagran
 
   USE shared_data, only : num,nx,ny,cv1_plasma,sixth,cowling_resistivity,none_zero,boris,comm,errcode,&
             dt,dt_factor,dt_from_restart,dt_multiplier,dt_previous,dt_snapshots,gamma,hall_mhd,&
-            largest_number,MPI_MIN,mpireal
+            largest_number,MPI_MIN,mpireal,restart,time,predictor_step,step
   !USE boundary, only : energy_bcs
   !USE neutral
   !USE conduct
@@ -323,18 +323,6 @@ CONTAINS
 
       END DO
     END DO
-
-    IF (cooling_term) THEN
-      DO iy = 1, ny
-        DO ix = 1, nx
-          cool_term_v(ix,iy) = alpha_av * dt * visc_heat(ix,iy)/rho(ix,iy) + &
-              (1.0_num - alpha_av) * cool_term_v(ix,iy)
-
-          energy(ix,iy) = energy(ix,iy) - cool_term_v(ix,iy)
-        END DO
-      END DO
-      energy = MAX(energy, 0.0_num)
-    END IF
 
   END SUBROUTINE predictor_corrector_step
 
