@@ -64,7 +64,7 @@ CONTAINS
 
     IF (IAND(initial, IC_RESTART) == 0) restart_snapshot = 0
 
-    p_visc = 0.0_num
+    !p_visc = 0.0_num
     eta = 0.0_num
     grav = 0.0_num
     IF (hall_mhd) lambda_i = 0.0_num
