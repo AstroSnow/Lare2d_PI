@@ -28,7 +28,7 @@ MODULE lagran
   !USE conduct
   !USE radiative
   !USE openboundary
-  !USE remap
+  USE remap, ONLY:eulerian_remap
 
   IMPLICIT NONE
 
@@ -691,7 +691,7 @@ CONTAINS
     
     predictor_step = .TRUE.
     dt = 0.5_num * dt
-    CALL eulerian_remap(step)
+    CALL eulerian_remap(step,bx,by,bz,cv,cv1)
     dt = 2.0_num * dt
     predictor_step = .FALSE. 
 #endif

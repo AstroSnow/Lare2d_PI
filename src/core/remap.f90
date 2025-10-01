@@ -14,11 +14,11 @@
   
 MODULE remap
 
-  USE shared_data
-  USE boundary
-  USE xremap
-  USE yremap
-  USE zremap
+  USE shared_data,ONLY : num,rke,dxb,dyb,xpass,ypass,nx,ny,delta_ke,ix,iy
+  !USE boundary
+  !USE xremap
+  !USE yremap
+  !USE zremap
 
   IMPLICIT NONE
 
@@ -30,8 +30,10 @@ CONTAINS
 
   ! Strang splitting
 
-  SUBROUTINE eulerian_remap(i)
+  SUBROUTINE eulerian_remap(i,bx,by,bz,cv,cv1)
 
+    REAL(num),intent(inout):: bx(-1:nx+2,-1:ny+2),by(-1:nx+2,-1:ny+2),bz(-1:nx+2,-1:ny+2)
+    REAL(num),intent(inout):: cv(-1:nx+2,-1:ny+2),cv1(-1:nx+2,-1:ny+2)
     INTEGER, INTENT(IN) :: i
     INTEGER :: case_test
 
@@ -60,29 +62,29 @@ CONTAINS
     ! Strang ordering
     SELECT CASE(case_test)
     CASE (0)
-      CALL remap_x(cv1_plasma)
-      CALL remap_y(cv1_plasma)
-      CALL remap_z(cv1_plasma)
+      CALL remap_x(cv1)
+      CALL remap_y(cv1)
+      CALL remap_z(cv1)
     CASE (1)
-      CALL remap_y(cv1_plasma)
-      CALL remap_z(cv1_plasma)
-      CALL remap_x(cv1_plasma)
+      CALL remap_y(cv1)
+      CALL remap_z(cv1)
+      CALL remap_x(cv1)
     CASE (2)
-      CALL remap_z(cv1_plasma)
-      CALL remap_x(cv1_plasma)
-      CALL remap_y(cv1_plasma)
+      CALL remap_z(cv1)
+      CALL remap_x(cv1)
+      CALL remap_y(cv1)
     CASE (3)
-      CALL remap_x(cv1_plasma)
-      CALL remap_z(cv1_plasma)
-      CALL remap_y(cv1_plasma)
+      CALL remap_x(cv1)
+      CALL remap_z(cv1)
+      CALL remap_y(cv1)
     CASE (4)
-      CALL remap_z(cv1_plasma)
-      CALL remap_y(cv1_plasma)
-      CALL remap_x(cv1_plasma)
+      CALL remap_z(cv1)
+      CALL remap_y(cv1)
+      CALL remap_x(cv1)
     CASE (5)
-      CALL remap_y(cv1_plasma)
-      CALL remap_x(cv1_plasma)
-      CALL remap_z(cv1_plasma)
+      CALL remap_y(cv1)
+      CALL remap_x(cv1)
+      CALL remap_z(cv1)
     END SELECT
 
     DO iy = -1, ny + 2
