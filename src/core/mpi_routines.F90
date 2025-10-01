@@ -349,7 +349,7 @@ CONTAINS
     DEALLOCATE(vx1, vy1, vz1)
     DEALLOCATE(bx, by, bz)
     DEALLOCATE(eta)
-    DEALLOCATE(cv, cv1)
+    DEALLOCATE(cv, cv1_plasma)
     DEALLOCATE(xc, xb, dxb, dxc)
     DEALLOCATE(yc, yb, dyb, dyc)
     DEALLOCATE(grav)

@@ -21,7 +21,8 @@ MODULE lagran
   USE shared_data, only : num,nx,ny,cv1_plasma,sixth,cowling_resistivity,none_zero,boris,comm,errcode,&
             dt,dt_factor,dt_from_restart,dt_multiplier,dt_previous,dt_snapshots,gamma,hall_mhd,&
             largest_number,MPI_MIN,mpireal,restart,time,predictor_step,step,va_max2,any_open,&
-            visc1,visc2,ionise_pot,dxb,dyb,dxc,dyc,gamma_boris
+            visc1,visc2,ionise_pot,dxb,dyb,dxc,dyc,gamma_boris,eta,eta_perp,xi_n,grav,visc_dep,cv,&
+            eta0,eta_background,j_max,resistive_mhd
   !USE boundary, only : energy_bcs
   !USE neutral
   !USE conduct
@@ -63,7 +64,7 @@ CONTAINS
   ! This subroutine manages the progress of the lagrangian step
   !****************************************************************************
 
-  SUBROUTINE lagrangian_step(rho,vx,vy,vz,energy,bx,by,bz)
+  SUBROUTINE lagrangian_step(rho,vx,vy,vz,energy,bx,by,bz,vx1,vy1,vz1)
 
     INTEGER :: substeps, subcycle
     REAL(num) :: actual_dt, dt_sub
@@ -71,7 +72,8 @@ CONTAINS
     REAL(num),intent(inout):: vx(-2:nx+2, -2:ny+2),vy(-2:nx+2, -2:ny+2),vz(-2:nx+2, -2:ny+2)
     REAL(num),intent(inout):: energy(-1:nx+2,-1:ny+2)
     REAL(num),intent(inout):: bx(-1:nx+2,-1:ny+2),by(-1:nx+2,-1:ny+2),bz(-1:nx+2,-1:ny+2)
-
+    REAL(num),intent(inout):: vx1(-2:nx+2, -2:ny+2),vy1(-2:nx+2, -2:ny+2),vz1(-2:nx+2, -2:ny+2)
+    
 #ifndef CAUCHY
     ALLOCATE(bx0(-2:nx+2,-1:ny+2))
     ALLOCATE(by0(-1:nx+2,-2:ny+2))
@@ -125,13 +127,13 @@ CONTAINS
       END DO
     END DO
 
-    CALL edge_shock_viscosity
+    CALL edge_shock_viscosity(cv,rho,vx,vy,vz)
     CALL set_dt(rho,vx,vy,vz,energy,bx,by,bz)
     dt2 = dt * 0.5_num
 
     energy(:,:) = MAX(energy(:,:), 0.0_num)
 
-    CALL predictor_corrector_step(energy,bx,by,bz,cv1_plasma)
+    CALL predictor_corrector_step(rho,energy,vx,vy,vz,bx,by,bz,cv,cv1_plasma,vx1,vy1,vz1)
 
     DEALLOCATE(bx1, by1, bz1, alpha1, alpha2)
     DEALLOCATE(visc_heat, pressure, rho_v, cv_v, flux_x, flux_y, flux_z, curlb)
@@ -154,11 +156,13 @@ CONTAINS
   ! The main predictor / corrector step which advances the momentum equation
   !****************************************************************************
 
-  SUBROUTINE predictor_corrector_step(energy,bx,by,bz,cv1)
+  SUBROUTINE predictor_corrector_step(rho,energy,vx,vy,vz,bx,by,bz,cv,cv1,vx1,vy1,vz1)
 
-    REAL(num),intent(inout):: energy(-1:nx+2,-1:ny+2)
+    REAL(num),intent(inout):: rho(-1:nx+1,-1:ny+1),energy(-1:nx+2,-1:ny+2)
+    REAL(num),intent(inout):: vx(-2:nx+2, -2:ny+2),vy(-2:nx+2, -2:ny+2),vz(-2:nx+2, -2:ny+2)
+    REAL(num),intent(inout):: vx1(-2:nx+2, -2:ny+2),vy1(-2:nx+2, -2:ny+2),vz1(-2:nx+2, -2:ny+2)
     REAL(num),intent(inout):: bx(-1:nx+2,-1:ny+2),by(-1:nx+2,-1:ny+2),bz(-1:nx+2,-1:ny+2)
-    REAL(num),intent(inout)::cv1(-1:nx+2, -1:ny+2)
+    REAL(num),intent(inout)::cv(-1:nx+2, -1:ny+2),cv1(-1:nx+2, -1:ny+2)
     REAL(num) :: pp, ppx, ppy, ppxy
     REAL(num) :: e1
     REAL(num) :: vxb, vxbm, vyb, vybm
@@ -175,7 +179,7 @@ CONTAINS
     bz0(:,:) = bz(:,:) 
 #endif
 
-    CALL b_field_and_cv1_update
+    CALL b_field_and_cv1_update(cv,cv1,vx,vy,vz,vx1,vy1,vz1)
 
     bx1(:,:) = bx1(:,:) * cv1(:,:)
     by1(:,:) = by1(:,:) * cv1(:,:)
@@ -280,7 +284,7 @@ CONTAINS
     
     CALL remap_v_bcs
 
-    CALL edge_shock_heating
+    CALL edge_shock_heating(cv,vx,vy,vz,vx1,vy1,vz1)
 
     DO iy = 0, ny
       DO ix = 0, nx
@@ -339,8 +343,11 @@ CONTAINS
   ! magnetic field
   !****************************************************************************
 
-  SUBROUTINE edge_shock_viscosity
+  SUBROUTINE edge_shock_viscosity(cv,rho,vx,vy,vz)
 
+    REAL(num),intent(in):: cv(-1:nx+1,-1:ny+1),rho(-1:nx+1,-1:ny+1)
+    REAL(num),intent(in):: vx(-2:nx+2,-2:ny+2),vy(-2:nx+2,-2:ny+2),vz(-2:nx+2,-2:ny+2)
+    
     REAL(num) :: dvdots, dx, dxm, dxp
     REAL(num) :: b2, rmin
     REAL(num) :: a1, a2, a3, a4
@@ -405,7 +412,7 @@ CONTAINS
         dvdots = - (vx(i1,j1) - vx(i2,j2))
         ! Force on node is alpha*dv*ds but store only alpha and convert to force
         ! when needed.  
-        alpha1(ix,iy) = edge_viscosity()
+        alpha1(ix,iy) = edge_viscosity(vx,vy,vz)
       END DO
     END DO
 
@@ -429,7 +436,7 @@ CONTAINS
         dxp = dyb(iyp)
         dxm = dyb(iym)
         dvdots = - (vy(i1,j1) - vy(i2,j2))
-        alpha2(ix,iy) = edge_viscosity()
+        alpha2(ix,iy) = edge_viscosity(vx,vy,vz)
       END DO
     END DO
 
@@ -499,10 +506,11 @@ CONTAINS
 
   CONTAINS
 
-    DOUBLE PRECISION FUNCTION edge_viscosity()
+    DOUBLE PRECISION FUNCTION edge_viscosity(vx,vy,vz)
 
       ! Actually returns q_k_bar = q_kur*(1-psi) / abs(dv)
       ! Other symbols follow notation in Caramana
+      REAL(num),intent(in):: vx(-1:nx+2,-1:ny+2),vy(-1:nx+2,-1:ny+2),vz(-1:nx+2,-1:ny+2)
 
       REAL(num) :: dvx, dvy, dvz, dv, dv2
 #ifdef SHOCKLIMITER      
@@ -565,7 +573,11 @@ CONTAINS
 
 
 
-  SUBROUTINE edge_shock_heating
+  SUBROUTINE edge_shock_heating(cv,vx,vy,vz,vx1,vy1,vz1)
+  
+    REAL(num),intent(in):: cv(-1:nx+2,-1:ny+2)
+    REAL(num),intent(in):: vx(-1:nx+2,-1:ny+2),vy(-1:nx+2,-1:ny+2),vz(-1:nx+2,-1:ny+2)
+    REAL(num),intent(in):: vx1(-1:nx+2,-1:ny+2),vy1(-1:nx+2,-1:ny+2),vz1(-1:nx+2,-1:ny+2)
 
     REAL(num) :: a1, a2, a3, a4
 
@@ -607,8 +619,11 @@ CONTAINS
 
 
 
-  SUBROUTINE b_field_and_cv1_update
+  SUBROUTINE b_field_and_cv1_update(cv,cv1,vx,vy,vz,vx1,vy1,vz1)
 
+    REAL(num),intent(inout):: cv(-1:nx+2,-1:ny+2),cv1(-1:nx+2,-1:ny+2)
+    REAL(num),intent(inout):: vx(-2:nx+2,-2:ny+2),vy(-2:nx+2,-2:ny+2),vz(-2:nx+2,-2:ny+2)
+    REAL(num),intent(inout):: vx1(-2:nx+2,-2:ny+2),vy1(-2:nx+2,-2:ny+2),vz1(-2:nx+2,-2:ny+2)
     REAL(num) :: vxb, vxbm, vyb, vybm, dvxdx, dvydy, dv
 #ifdef CAUCHY
     REAL(num) :: dvxdy, dvydx, dvzdx, vzb, vzbm, dvzdy
@@ -682,6 +697,54 @@ CONTAINS
 #endif
 
   END SUBROUTINE b_field_and_cv1_update
+
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  SUBROUTINE eta_calc(bx,by,bz)
+
+    REAL(num),intent(in):: bx(-1:nx+2,-1:ny+2),by(-1:nx+2,-1:ny+2),bz(-1:nx+2,-1:ny+2)
+    REAL(num) :: jx, jy, jz, jxp, jyp
+    INTEGER :: ixp, iyp
+
+    IF (resistive_mhd) THEN
+      DO iy = -1, ny + 1
+        iyp = iy + 1
+        DO ix = -1, nx + 1
+          ixp = ix + 1
+
+          ! jx at Ex(i,j)
+          jx  = (bz(ix ,iyp) - bz(ix ,iy )) / dyc(iy)
+
+          ! jx at Ex(i+1,j)
+          jxp = (bz(ixp,iyp) - bz(ixp,iy )) / dyc(iy)
+
+          ! jy at Ey(i,j)
+          jy  = (bz(ix ,iy ) - bz(ixp,iy )) / dxc(ix)
+
+          ! jy at Ey(i,j+1)
+          jyp = (bz(ix ,iyp) - bz(ixp,iyp)) / dxc(ix)
+
+          ! jz at Ez(i,j)
+          jz  = (by(ixp,iy ) - by(ix ,iy )) / dxc(ix) &
+              - (bx(ix ,iyp) - bx(ix ,iy )) / dyc(iy)
+
+          ! Current at V
+          jx = (jx + jxp) * 0.5_num
+          jy = (jy + jyp) * 0.5_num
+
+          IF (SQRT(jx**2 + jy**2 + jz**2) > j_max) THEN
+            eta(ix,iy) = eta_background + eta0
+          ELSE
+            eta(ix,iy) = eta_background
+          END IF
+        END DO
+      END DO
+    ELSE
+      eta = 0.0_num
+    END IF
+
+  END SUBROUTINE eta_calc
+
 
 
 
@@ -769,12 +832,6 @@ CONTAINS
         ! Adjust to accomodate resistive effects
         dtr_local = MIN(dtr_local, dt3)
 
-        ! Hall MHD CFL limit
-        IF (hall_mhd) THEN
-          dt4 = 0.75_num * rho(ix,iy) * MIN(dxb(ix), dyb(iy))**2 &
-            / MAX(lambda_i(ix,iy) * SQRT(w1), none_zero)
-          dth_local = MIN(dth_local, dt4)
-        END IF
         
       END DO
     END DO
