@@ -71,7 +71,7 @@ PROGRAM lare2d
   CALL open_files                ! setup.f90
   CALL set_boundary_conditions   ! boundary.f90
   CALL boundary_conditions       ! boundary.f90
-  CALL eta_calc                  ! lagran.f90
+  CALL eta_calc(bx,by,bz)                  ! lagran.f90
 
   IF (eos_number /= EOS_IDEAL) CALL neutral_fraction ! neutral.f90
 
@@ -87,10 +87,10 @@ PROGRAM lare2d
     IF ((step >= nsteps .AND. nsteps >= 0) .OR. (time >= t_end)) EXIT
     step = step + 1
     IF (eos_number /= EOS_IDEAL) CALL neutral_fraction ! neutral.f90
-    CALL lagrangian_step(rho,vx,vy,vz,energy,bx,by,bz)             ! lagran.f90
+    CALL lagrangian_step(rho,vx,vy,vz,energy,bx,by,bz,vx1,vy1,vz1)            ! lagran.f90
     CALL eulerian_remap(step)        ! remap.f90
     IF (rke) CALL energy_correction  ! diagnostics.f90
-    CALL eta_calc                    ! lagran.f90
+    CALL eta_calc(bx,by,bz)                    ! lagran.f90
     CALL output_routines(step)       ! diagnostics.f90
   END DO
 
